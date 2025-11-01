@@ -7,8 +7,8 @@ import type { Session, User } from "better-auth";
 declare global {
 	namespace App {
 		interface Locals {
-			user: User,
-			session: Session,
+			user: User | null,
+			session: Session | null,
 		}
 	} // interface Error {}
 	// interface Locals {}

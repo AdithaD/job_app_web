@@ -1,54 +1,53 @@
 <script lang="ts">
-	import { signIn, signUp } from '$lib/auth-client';
+	import { enhance } from '$app/forms';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Field from '$lib/components/ui/field/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 
-	let email = $state('');
-	let password = $state('');
-	let username = $state('');
-
-	const handleSignUp = async () => {
-		await signUp.email({
-			email,
-			password,
-			name: username,
-			callbackURL: '/dashboard'
-		});
-	};
+	let { form } = $props();
 </script>
 
-<div class="w-1/3 p-8">
-	<h1>Job app</h1>
-	<h2>Login</h2>
-	<input
-		class="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
-		id="email"
-		name="email"
-		type="email"
-		placeholder="Email"
-		bind:value={email}
-		required
-	/>
-	<input
-		class="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
-		id="password"
-		name="password"
-		type="password"
-		placeholder="Password"
-		bind:value={password}
-		minlength="1"
-		maxlength="30"
-		required
-	/>
-	<input
-		class="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
-		id="username"
-		name="username"
-		type="text"
-		placeholder="Display Name"
-		bind:value={username}
-	/>
-	<button
-		class="focus:shadow-outline rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none"
-		type="submit"
-		onclick={handleSignUp}>Sign Up</button
-	>
+<div class="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+	<div class="w-full max-w-sm">
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Create an account</Card.Title>
+				<Card.Description>Enter your information below to create your account</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<form method="POST" use:enhance>
+					<Field.Group>
+						<Field.Field>
+							<Field.Label for="name">Full Name</Field.Label>
+							<Input id="name" name="name" type="text" placeholder="John Doe" required />
+						</Field.Field>
+						<Field.Field>
+							<Field.Label for="email">Email</Field.Label>
+							<Input id="email" name="email" type="email" placeholder="m@example.com" required />
+						</Field.Field>
+						<Field.Field>
+							<Field.Label for="password">Password</Field.Label>
+							<Input id="password" name="password" type="password" required />
+							<Field.Description>Must be at least 8 characters long.</Field.Description>
+						</Field.Field>
+						<Field.Field>
+							<Field.Label for="confirm-password">Confirm Password</Field.Label>
+							<Input id="confirm-password" name="confirm-password" type="password" required />
+							<Field.Description>Please confirm your password.</Field.Description>
+						</Field.Field>
+						<p class="text-red-500">{form?.message}</p>
+						<Field.Group>
+							<Field.Field>
+								<Button type="submit">Create Account</Button>
+								<Field.Description class="px-6 text-center">
+									Already have an account? <a href="/signin">Sign in</a>
+								</Field.Description>
+							</Field.Field>
+						</Field.Group>
+					</Field.Group>
+				</form>
+			</Card.Content>
+		</Card.Root>
+	</div>
 </div>

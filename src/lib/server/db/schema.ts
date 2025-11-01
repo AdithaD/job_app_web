@@ -1,4 +1,12 @@
+import { phoneNumber } from 'better-auth/plugins';
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { randomUUID } from 'node:crypto';
+
+export type JobStatus = typeof jobStatuses[number];
+export const jobStatuses = <const>["unscheduled", "scheduled", "in_progress", "completed", "cancelled"];
+
+export type PaymentStatus = typeof paymentStatuses[number];
+export const paymentStatuses = <const>["unquoted", "quoted", "invoiced", "paid"];
 
 export const user = sqliteTable("user", {
 	id: text("id").primaryKey(),
@@ -45,6 +53,29 @@ export const verification = sqliteTable("verification", {
 	expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const job = sqliteTable("job", {
+	id: text("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
+	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	clientId: text('client_id').references(() => client.id),
+	jobNumber: integer('job_number').notNull(),
+	title: text("title").notNull().default("New Job"),
+	description: text("description"),
+	location: text("location"),
+	scheduledDate: integer('scheduled_date', { mode: 'timestamp' }),
+	jobStatus: text("job_status", { enum: jobStatuses }).notNull().default("unscheduled"),
+	paymentStatus: text("payment_status", { enum: paymentStatuses }).notNull().default("unquoted"),
+	quotedAmount: integer("quoted_amount").notNull().default(0),
+	paidAmount: integer("paid_amount").notNull().default(0),
+});
+
+export const client = sqliteTable("client", {
+	id: text("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
+	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	name: text("name").notNull(),
+	phone: text("phone"),
+	address: text("address"),
 });
 
 export type Session = typeof session.$inferSelect;

@@ -1,45 +1,42 @@
 <script lang="ts">
-	import { signIn, signUp } from '$lib/auth-client';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import { FieldGroup, Field, FieldLabel, FieldDescription } from '$lib/components/ui/field';
+	import { Input } from '$lib/components/ui/input';
 
-	let email = $state('');
-	let password = $state('');
-	let username = $state('');
-
-	const handleSignIn = async () => {
-		await signIn.email({
-			email,
-			password,
-			callbackURL: '/dashboard'
-		});
-	};
+	const id = $props.id();
 </script>
 
-<div class="w-1/3 p-8">
-	<h1>Job app</h1>
-	<h2>Login</h2>
-	<input
-		class="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
-		id="email"
-		name="email"
-		type="email"
-		placeholder="Email"
-		bind:value={email}
-		required
-	/>
-	<input
-		class="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
-		id="password"
-		name="password"
-		type="password"
-		placeholder="Password"
-		bind:value={password}
-		minlength="1"
-		maxlength="30"
-		required
-	/>
-	<button
-		class="focus:shadow-outline rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none"
-		type="submit"
-		onclick={handleSignIn}>Login</button
-	>
+<div class="flex h-screen w-full items-center justify-center px-4">
+	<Card.Root class="mx-auto w-full max-w-sm">
+		<Card.Header>
+			<Card.Title class="text-2xl">Login</Card.Title>
+			<Card.Description>Enter your email below to login to your account</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST">
+				<FieldGroup>
+					<Field>
+						<FieldLabel for="email-{id}">Email</FieldLabel>
+						<Input id="email-{id}" type="email" placeholder="m@example.com" required />
+					</Field>
+					<Field>
+						<div class="flex items-center">
+							<FieldLabel for="password-{id}">Password</FieldLabel>
+							<!-- <a href="##" class="ml-auto inline-block text-sm underline">
+								Forgot your password?
+							</a> -->
+						</div>
+						<Input id="password-{id}" type="password" required />
+					</Field>
+					<Field>
+						<Button type="submit" class="w-full">Login</Button>
+						<FieldDescription class="text-center">
+							Don't have an account? <a href="/signup">Sign up</a>
+						</FieldDescription>
+					</Field>
+				</FieldGroup>
+			</form>
+		</Card.Content>
+	</Card.Root>
 </div>
