@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import z, { ZodError, type ZodSafeParseResult } from "zod";
-import type { JobStatus, PaymentStatus } from "./server/db/schema";
+import type { JobStatus, PaymentStatus } from "./schema";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -40,3 +40,10 @@ const psToString: Record<PaymentStatus, string> = {
 export function paymentStatusToString(status: PaymentStatus) {
 	return psToString[status];
 }
+export type NullToUndefined<T> = {
+	[K in keyof T]: T[K] extends null
+	? undefined
+	: T[K] extends (infer U)[]
+	? NullToUndefined<U>[]
+	: Exclude<T[K], null> | ([null] extends [T[K]] ? undefined : never);
+};

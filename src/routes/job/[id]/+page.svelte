@@ -4,6 +4,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import DateWithIcon from '$lib/components/ui/DateWithIcon.svelte';
 	import * as Item from '$lib/components/ui/item';
+	import * as Table from '$lib/components/ui/table/index.js';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import { jobStatusToString } from '$lib/utils.js';
 
@@ -24,14 +25,19 @@
 						</div>
 						<Badge>{jobStatusToString(data.job.jobStatus)}</Badge>
 					</div>
-					<Button variant="ghost" class="group">
+					<Button
+						variant="ghost"
+						class="text-muted-foreground transition-colors group-hover:text-foreground"
+						href="{data.job.id}/edit"
+					>
+						Edit
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
 							viewBox="0 0 24 24"
 							stroke-width="1.5"
 							stroke="currentColor"
-							class="size-6 text-muted-foreground transition-colors group-hover:text-foreground"
+							class="size-6"
 						>
 							<path
 								stroke-linecap="round"
@@ -53,11 +59,11 @@
 					<Item.Root variant="outline">
 						<Item.Content>
 							<Item.Title>
-								<p>{data.job.client.name}</p>
+								{data.job.client.name}
 							</Item.Title>
 							<Item.Description>
-								<p>{data.job.client.address}</p>
-								<p>{data.job.client.phone}</p>
+								{data.job.client.address}<br />
+								{data.job.client.phone}
 							</Item.Description>
 						</Item.Content>
 						<Item.Actions>
@@ -83,9 +89,40 @@
 			</div>
 		</div>
 		<Separator orientation="vertical"></Separator>
-		<div class="flex flex-1 flex-col">
-			<div class="flex-1">
-				<h2 class="text-2xl font-bold">Materials</h2>
+		<div class="flex flex-1 flex-col gap-12">
+			<div class="flex min-h-0 flex-1 flex-col gap-4">
+				<h2 class="mb-4 text-2xl font-bold">Materials</h2>
+				<div class="flex min-h-0 grow flex-col">
+					<Table.Root>
+						<Table.Header>
+							<Table.Row>
+								<Table.Head class="w-[100px]">Name</Table.Head>
+								<Table.Head>Cost</Table.Head>
+								<Table.Head>Quantity</Table.Head>
+								<Table.Head class="text-right">Total Cost</Table.Head>
+							</Table.Row>
+						</Table.Header>
+						<Table.Body>
+							{#each data.job.materials as material}
+								<Table.Row>
+									<Table.Cell class="font-medium">{material.name}</Table.Cell>
+									<Table.Cell>{material.cost}</Table.Cell>
+									<Table.Cell>{material.quantity}</Table.Cell>
+									<Table.Cell class="text-right"
+										>{material.cost * (material.quantity ?? 1)}</Table.Cell
+									>
+								</Table.Row>
+							{/each}
+						</Table.Body>
+					</Table.Root>
+				</div>
+				<div class="text-right">
+					Total: <span class="font-bold">
+						${data.job.materials
+							.map((m) => m.cost * (m.quantity ?? 1))
+							.reduce((acc, val) => acc + val, 0)}
+					</span>
+				</div>
 			</div>
 			<div class="flex flex-1 flex-col">
 				<h2 class="text-2xl font-bold">Notes</h2>

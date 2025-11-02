@@ -3,7 +3,8 @@ import { seed } from "drizzle-seed";
 import { dev } from "$app/environment";
 import { createClient } from "@libsql/client";
 import { env } from "$env/dynamic/private";
-import { job, client, jobStatuses, paymentStatuses } from "$lib/server/db/schema";
+import { job, client, material } from "$lib/server/db/schema";
+import { jobStatuses, paymentStatuses } from "$lib/schema";
 
 if (!env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
 if (!dev && !env.DATABASE_AUTH_TOKEN) throw new Error('DATABASE_AUTH_TOKEN is not set');
@@ -17,7 +18,7 @@ const dbClient = createClient({
 const USER_ID = "EKYMvKZuuJsnnKVB2nCOHxusyKKFPKec";
 export async function main() {
     const db = drizzle(dbClient);
-    await seed(db, { job, client }).refine((f) => ({
+    await seed(db, { job, client, material }).refine((f) => ({
         job: {
             columns: {
                 title: f.default({ defaultValue: "Some job title" }),
@@ -35,6 +36,13 @@ export async function main() {
                 userId: f.default({ defaultValue: USER_ID }),
                 phone: f.phoneNumber(),
                 address: f.streetAddress(),
+            }
+        },
+        material: {
+            columns: {
+                name: f.valuesFromArray({ values: ["Copper", "Inverter", "PVC Conduit", "Isolator"] }),
+                cost: f.int({ minValue: 0, maxValue: 1000 }),
+                quantity: f.weightedRandom([{ weight: 0.9, value: f.int({ minValue: 0, maxValue: 10 }) }, { weight: 0.1, value: f.default({ defaultValue: null }) }])
             }
         }
     }))

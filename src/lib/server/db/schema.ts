@@ -1,13 +1,10 @@
+import { jobStatuses, paymentStatuses } from '$lib/schema';
 import { phoneNumber } from 'better-auth/plugins';
 import { relations } from 'drizzle-orm';
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { randomUUID } from 'node:crypto';
 
-export type JobStatus = typeof jobStatuses[number];
-export const jobStatuses = <const>["unscheduled", "scheduled", "in_progress", "completed", "cancelled"];
 
-export type PaymentStatus = typeof paymentStatuses[number];
-export const paymentStatuses = <const>["unquoted", "quoted", "invoiced", "paid"];
 
 export const user = sqliteTable("user", {
 	id: text("id").primaryKey(),
@@ -71,11 +68,28 @@ export const job = sqliteTable("job", {
 	paidAmount: integer("paid_amount").notNull().default(0),
 });
 
-export const jobRelations = relations(job, ({ one }) => ({
+export const material = sqliteTable("material", {
+	jobId: integer('job_id').references(() => job.id, { onDelete: 'cascade' }).notNull(),
+	name: text('name').notNull(),
+	cost: integer('cost').notNull(),
+	quantity: integer('quantity'),
+}, (table) => [
+	primaryKey({ columns: [table.jobId, table.name] })
+])
+
+export const materialRelations = relations(material, ({ one }) => ({
+	job: one(job, {
+		fields: [material.jobId],
+		references: [job.id],
+	})
+}))
+
+export const jobRelations = relations(job, ({ one, many }) => ({
 	client: one(client, {
 		fields: [job.clientId],
 		references: [client.id]
-	})
+	}),
+	materials: many(material)
 }))
 
 export const client = sqliteTable("client", {
@@ -87,8 +101,6 @@ export const client = sqliteTable("client", {
 });
 
 export type Session = typeof session.$inferSelect;
-
 export type User = typeof user.$inferSelect;
-
 export type Job = typeof job.$inferSelect;
 export type Client = typeof client.$inferSelect;
