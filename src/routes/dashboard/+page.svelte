@@ -1,9 +1,6 @@
 <script lang="ts">
-	import { useSession } from '$lib/auth-client';
-	import { Badge } from '$lib/components/ui/badge/index.js';
+	import DashboardJobCard from './DashboardJobCard.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import * as Card from '$lib/components/ui/card';
-	import { jobStatusToString, paymentStatusToString } from '$lib/utils';
 
 	const { data } = $props();
 </script>
@@ -14,19 +11,7 @@
 			<h1 class="mb-4 text-4xl font-bold">Upcoming</h1>
 			<div class="grid min-h-0 flex-1 gap-4 overflow-y-auto">
 				{#each data.jobs as job}
-					<Card.Root>
-						<Card.Header>
-							<Card.Title>{job.title}</Card.Title>
-							<Card.Description>
-								{jobStatusToString(job.jobStatus)}, {paymentStatusToString(job.paymentStatus)}
-							</Card.Description>
-						</Card.Header>
-						<Card.Content>
-							{job.scheduledDate?.toLocaleString()}
-							<br />
-							{job.location}
-						</Card.Content>
-					</Card.Root>
+					<DashboardJobCard {job} />
 				{/each}
 			</div>
 		</div>
@@ -34,7 +19,7 @@
 		<div class="flex-1">
 			<h2 class="mb-4 text-2xl font-bold">Quick Actions</h2>
 			<div class="flex flex-col gap-4">
-				<Button variant="default">Add New Job</Button>
+				<Button class="h-16 font-bold" variant="default">Add New Job</Button>
 				<Button variant="secondary">Quick Search</Button>
 			</div>
 		</div>
