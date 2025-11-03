@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from "./$types";
 import { superValidate } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
-import { editJobFormSchema } from "./schema";
+import { editJobFormSchema } from "../../schema";
 import { db } from "$lib/server/db";
 import { job, type Job } from "$lib/server/db/schema";
 import { redirect, error, fail } from "@sveltejs/kit";
