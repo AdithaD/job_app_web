@@ -1,11 +1,11 @@
 import { error, redirect } from "@sveltejs/kit";
-import type { PageServerLoad } from "./$types";
+import type { LayoutServerLoad } from "./$types";
 import { db } from "$lib/server/db";
 import { job } from "$lib/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import { tuple } from "zod";
 
-export const load: PageServerLoad = async (event) => {
+export const load: LayoutServerLoad = async (event) => {
     if (!event.locals.session || !event.locals.user) {
         return redirect(303, "/signin")
     }

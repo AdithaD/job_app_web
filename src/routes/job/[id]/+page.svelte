@@ -1,4 +1,8 @@
 <script lang="ts">
+	import MaterialTable from './MaterialTable.svelte';
+
+	import EditButton from './EditButton.svelte';
+
 	import AddressWithIcon from '$lib/components/ui/AddressWithIcon.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -6,7 +10,7 @@
 	import * as Item from '$lib/components/ui/item';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
-	import { jobStatusToString } from '$lib/utils.js';
+	import { jobStatusToString, paymentStatusToString } from '$lib/utils.js';
 
 	let { data } = $props();
 </script>
@@ -23,29 +27,9 @@
 								#{data.job.jobNumber}
 							</div>
 						</div>
-						<Badge>{jobStatusToString(data.job.jobStatus)}</Badge>
+						<Badge variant="outline">{jobStatusToString(data.job.jobStatus)}</Badge>
 					</div>
-					<Button
-						variant="ghost"
-						class="text-muted-foreground transition-colors group-hover:text-foreground"
-						href="{data.job.id}/edit"
-					>
-						Edit
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke-width="1.5"
-							stroke="currentColor"
-							class="size-6"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-							/>
-						</svg>
-					</Button>
+					<EditButton href="{data.job.id}/edit"></EditButton>
 				</div>
 				<div class="flex flex-col gap-2">
 					<DateWithIcon date={data.job.scheduledDate} />
@@ -74,8 +58,31 @@
 					<p>No client set.</p>
 				{/if}
 			</div>
-			<div class="flex grow flex-col gap-2">
-				<h2 class="text-2xl font-bold">Pricing</h2>
+			<div class="flex flex-1 flex-col">
+				<h2 class="text-2xl font-bold">Notes</h2>
+				<div class="flex grow flex-col">
+					<div class="grow"></div>
+					<div class="flex justify-between gap-8">
+						<Button class="grow" variant="secondary">Add Note</Button>
+						<Button class="grow" variant="secondary">Add Attachment</Button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<Separator orientation="vertical"></Separator>
+		<div class="flex flex-1 flex-col gap-12">
+			<div class="flex min-h-0 flex-1 grow flex-col gap-4">
+				<div class="flex justify-between">
+					<h2 class="mb-4 text-2xl font-bold">Materials</h2>
+					<EditButton href="{data.job.id}/material"></EditButton>
+				</div>
+				<MaterialTable materials={data.job.materials} />
+			</div>
+			<div class="flex flex-col gap-2">
+				<div class="flex gap-4">
+					<h2 class="text-2xl font-bold">Pricing</h2>
+					<Badge variant="outline">{paymentStatusToString(data.job.paymentStatus)}</Badge>
+				</div>
 				<div>
 					<div>
 						Amount Quoted: ${data.job.quotedAmount}
@@ -88,53 +95,6 @@
 				<div class="flex justify-between gap-8">
 					<Button class="grow" variant="secondary">Generate Quote</Button>
 					<Button class="grow" variant="secondary">Generate Invoice</Button>
-				</div>
-			</div>
-		</div>
-		<Separator orientation="vertical"></Separator>
-		<div class="flex flex-1 flex-col gap-12">
-			<div class="flex min-h-0 flex-1 flex-col gap-4">
-				<h2 class="mb-4 text-2xl font-bold">Materials</h2>
-				<div class="flex min-h-0 grow flex-col">
-					<Table.Root>
-						<Table.Header>
-							<Table.Row>
-								<Table.Head class="w-[100px]">Name</Table.Head>
-								<Table.Head>Cost</Table.Head>
-								<Table.Head>Quantity</Table.Head>
-								<Table.Head class="text-right">Total Cost</Table.Head>
-							</Table.Row>
-						</Table.Header>
-						<Table.Body>
-							{#each data.job.materials as material}
-								<Table.Row>
-									<Table.Cell class="font-medium">{material.name}</Table.Cell>
-									<Table.Cell>{material.cost}</Table.Cell>
-									<Table.Cell>{material.quantity}</Table.Cell>
-									<Table.Cell class="text-right"
-										>{material.cost * (material.quantity ?? 1)}</Table.Cell
-									>
-								</Table.Row>
-							{/each}
-						</Table.Body>
-					</Table.Root>
-				</div>
-				<div class="text-right">
-					Total: <span class="font-bold">
-						${data.job.materials
-							.map((m) => m.cost * (m.quantity ?? 1))
-							.reduce((acc, val) => acc + val, 0)}
-					</span>
-				</div>
-			</div>
-			<div class="flex flex-1 flex-col">
-				<h2 class="text-2xl font-bold">Notes</h2>
-				<div class="flex grow flex-col">
-					<div class="grow"></div>
-					<div class="flex justify-between gap-8">
-						<Button class="grow" variant="secondary">Add Note</Button>
-						<Button class="grow" variant="secondary">Add Attachment</Button>
-					</div>
 				</div>
 			</div>
 		</div>

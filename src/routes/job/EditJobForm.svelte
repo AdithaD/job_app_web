@@ -3,8 +3,8 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { jobStatuses } from '$lib/schema';
-	import { jobStatusToString } from '$lib/utils.js';
+	import { jobStatuses, paymentStatuses } from '$lib/schema';
+	import { jobStatusToString, paymentStatusToString } from '$lib/utils.js';
 	import DateTimePicker from '$lib/components/ui/DateTimePicker.svelte';
 	import { getLocalTimeZone } from '@internationalized/date';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
@@ -174,6 +174,24 @@
 						{#snippet children({ props })}
 							<Form.Label>Paid Amount</Form.Label>
 							<Input {...props} type="number" bind:value={$formData.paidAmount} />
+						{/snippet}
+					</Form.Control>
+					<Form.FieldErrors />
+				</Form.Field>
+				<Form.Field {form} name="paymentStatus" class="grow">
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Status</Form.Label>
+							<Select.Root type="single" bind:value={$formData.paymentStatus} name={props.name}>
+								<Select.Trigger class="w-full" {...props}
+									>{paymentStatusToString($formData.paymentStatus)}</Select.Trigger
+								>
+								<Select.Content>
+									{#each paymentStatuses as status}
+										<Select.Item value={status} label={paymentStatusToString(status)} />
+									{/each}
+								</Select.Content>
+							</Select.Root>
 						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />

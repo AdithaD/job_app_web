@@ -1,5 +1,4 @@
-import { jobStatuses, paymentStatuses } from '$lib/schema';
-import { phoneNumber } from 'better-auth/plugins';
+import { jobStatuses, paymentStatuses } from '../../schema';
 import { relations } from 'drizzle-orm';
 import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { randomUUID } from 'node:crypto';
@@ -69,7 +68,7 @@ export const job = sqliteTable("job", {
 });
 
 export const material = sqliteTable("material", {
-	jobId: integer('job_id').references(() => job.id, { onDelete: 'cascade' }).notNull(),
+	jobId: text('job_id').references(() => job.id, { onDelete: 'cascade' }).notNull(),
 	name: text('name').notNull(),
 	cost: integer('cost').notNull(),
 	quantity: integer('quantity'),
@@ -104,3 +103,4 @@ export type Session = typeof session.$inferSelect;
 export type User = typeof user.$inferSelect;
 export type Job = typeof job.$inferSelect;
 export type Client = typeof client.$inferSelect;
+export type Material = typeof material.$inferSelect;

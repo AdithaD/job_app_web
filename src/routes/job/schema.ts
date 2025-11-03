@@ -1,6 +1,12 @@
 import { jobStatuses, paymentStatuses } from "$lib/schema";
 import z from "zod";
 
+export const addJobFormSchema = z.object({
+    name: z.string().min(1).nonempty(),
+    cost: z.number().min(0).nonoptional(),
+    quantity: z.coerce.number(),
+})
+
 export const editJobFormSchema = z.object({
     title: z.string().min(1).max(50).nonempty(),
     description: z.string().min(1).max(1000).optional(),
