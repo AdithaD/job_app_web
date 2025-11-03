@@ -53,9 +53,9 @@
 					<p>{data.job.description}</p>
 				</div>
 			</div>
-			{#if data.job.client}
-				<div class="flex flex-col gap-2">
-					<h2 class="text-2xl font-bold">Client</h2>
+			<div class="flex flex-col gap-2">
+				<h2 class="text-2xl font-bold">Client</h2>
+				{#if data.job.client}
 					<Item.Root variant="outline">
 						<Item.Content>
 							<Item.Title>
@@ -70,9 +70,11 @@
 							<Button variant="outline">Details</Button>
 						</Item.Actions>
 					</Item.Root>
-				</div>
-			{/if}
-			<div class="flex flex-col gap-2">
+				{:else}
+					<p>No client set.</p>
+				{/if}
+			</div>
+			<div class="flex grow flex-col gap-2">
 				<h2 class="text-2xl font-bold">Pricing</h2>
 				<div>
 					<div>
@@ -82,6 +84,7 @@
 						Amount Paid: ${data.job.paidAmount}
 					</div>
 				</div>
+				<div class="grow"></div>
 				<div class="flex justify-between gap-8">
 					<Button class="grow" variant="secondary">Generate Quote</Button>
 					<Button class="grow" variant="secondary">Generate Invoice</Button>

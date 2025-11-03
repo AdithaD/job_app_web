@@ -12,14 +12,25 @@
 	import { editJobFormSchema } from './schema';
 	import type z from 'zod';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
+	import type { Client } from '$lib/server/db/schema';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import Label from '$lib/components/ui/label/label.svelte';
+	import * as Field from '$lib/components/ui/field';
 
-	const { formProp }: { formProp: SuperValidated<z.output<typeof editJobFormSchema>> } = $props();
+	const {
+		formProp,
+		clients
+	}: { formProp: SuperValidated<z.output<typeof editJobFormSchema>>; clients?: Client[] } =
+		$props();
 
 	const form = superForm(formProp, {
 		validators: zod4Client(editJobFormSchema)
 	});
 
 	const { form: formData, enhance } = form;
+
+	var addingNewClient = $state(false);
 </script>
 
 <div class="flex h-screen justify-center gap-4 p-8">
@@ -52,6 +63,7 @@
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
+
 				<Form.Field {form} name="jobStatus" class="grow">
 					<Form.Control>
 						{#snippet children({ props })}
@@ -71,7 +83,7 @@
 					<Form.FieldErrors />
 				</Form.Field>
 			</div>
-			<Form.Field {form} name="description" class="grow">
+			<Form.Field {form} name="description">
 				<Form.Control>
 					{#snippet children({ props })}
 						<Form.Label>Description</Form.Label>
@@ -80,7 +92,94 @@
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
-			<Separator></Separator>
+			{#if addingNewClient}
+				<div class="flex flex-col gap-2">
+					<div class="flex justify-between gap-4">
+						<Field.Label>Client</Field.Label>
+						<div class="flex gap-2">
+							<Checkbox id="new-client" bind:checked={addingNewClient}></Checkbox>
+							<Label for="new-client">New Client</Label>
+						</div>
+					</div>
+					<div class="flex flex-col gap-2 rounded-lg border-2 p-4">
+						<div class="flex gap-4">
+							<Form.Field {form} name="newClientName" class="grow">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>Name</Form.Label>
+										<Input {...props} bind:value={$formData.newClientName} required />
+									{/snippet}
+								</Form.Control>
+								<Form.FieldErrors />
+							</Form.Field>
+							<Form.Field {form} name="newClientPhone">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>Phone Number</Form.Label>
+										<Input {...props} bind:value={$formData.newClientPhone} />
+									{/snippet}
+								</Form.Control>
+								<Form.FieldErrors />
+							</Form.Field>
+						</div>
+						<Form.Field {form} name="newClientAddress">
+							<Form.Control>
+								{#snippet children({ props })}
+									<Form.Label>Address</Form.Label>
+									<Input {...props} bind:value={$formData.newClientAddress} />
+								{/snippet}
+							</Form.Control>
+							<Form.FieldErrors />
+						</Form.Field>
+					</div>
+				</div>
+			{:else}
+				<Form.Field {form} name="clientId">
+					<Form.Control>
+						{#snippet children({ props })}
+							<div class="flex justify-between gap-4">
+								<Form.Label>Client</Form.Label>
+								<div class="flex gap-2">
+									<Checkbox id="new-client" bind:checked={addingNewClient}></Checkbox>
+									<Label for="new-client">New Client</Label>
+								</div>
+							</div>
+							<Select.Root type="single" bind:value={$formData.clientId} name={props.name}>
+								<Select.Trigger class="w-full" {...props}>
+									{clients?.find((c) => c.id == $formData.clientId)?.name ?? 'Not selected'}
+								</Select.Trigger>
+								<Select.Content>
+									{#each clients as client}
+										<Select.Item value={client.id} label={client.name} />
+									{/each}
+								</Select.Content>
+							</Select.Root>
+						{/snippet}
+					</Form.Control>
+					<Form.FieldErrors />
+				</Form.Field>
+			{/if}
+			<div class="flex justify-between gap-4">
+				<Form.Field {form} name="quotedAmount">
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Quoted Amount</Form.Label>
+							<Input {...props} type="number" bind:value={$formData.quotedAmount} />
+						{/snippet}
+					</Form.Control>
+					<Form.FieldErrors />
+				</Form.Field>
+				<Form.Field {form} name="paidAmount">
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Paid Amount</Form.Label>
+							<Input {...props} type="number" bind:value={$formData.paidAmount} />
+						{/snippet}
+					</Form.Control>
+					<Form.FieldErrors />
+				</Form.Field>
+			</div>
+			<div class="grow"></div>
 			<Form.Button>Submit</Form.Button>
 		</form>
 	</div>

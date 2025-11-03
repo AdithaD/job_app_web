@@ -4,4 +4,4 @@
 	let { data, form } = $props();
 </script>
 
-<EditJobForm formProp={form?.form ?? data.form} />
+<EditJobForm formProp={form?.form ?? data.form} clients={data.clients} />
