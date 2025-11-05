@@ -47,3 +47,7 @@ export type NullToUndefined<T> = {
 	? NullToUndefined<U>[]
 	: Exclude<T[K], null> | ([null] extends [T[K]] ? undefined : never);
 };
+
+export function getAttachmentPath(userId: string, jobId: string, noteId: string, fileName: string) {
+	return `/static/${userId}/${jobId}/${noteId}-${fileName}`;
+}

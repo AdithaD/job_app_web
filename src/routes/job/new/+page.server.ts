@@ -4,7 +4,7 @@ import { error, fail, redirect } from "@sveltejs/kit";
 import { and, eq, max } from "drizzle-orm";
 import { superValidate } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
-import { editJobFormSchema } from "../schema";
+import { editJobFormSchema } from "../validation";
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async (event) => {

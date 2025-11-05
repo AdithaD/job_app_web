@@ -3,8 +3,6 @@ import { relations } from 'drizzle-orm';
 import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { randomUUID } from 'node:crypto';
 
-
-
 export const user = sqliteTable("user", {
 	id: text("id").primaryKey(),
 	name: text('name').notNull(),
@@ -76,9 +74,25 @@ export const material = sqliteTable("material", {
 	primaryKey({ columns: [table.jobId, table.name] })
 ])
 
+export const note = sqliteTable("note", {
+	id: text("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
+	jobId: text('job_id').references(() => job.id, { onDelete: 'cascade' }).notNull(),
+	content: text('content').notNull(),
+	filePath: text('file_path'),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+})
+
 export const materialRelations = relations(material, ({ one }) => ({
 	job: one(job, {
 		fields: [material.jobId],
+		references: [job.id],
+	})
+}));
+
+export const noteRelations = relations(note, ({ one }) => ({
+	job: one(job, {
+		fields: [note.jobId],
 		references: [job.id],
 	})
 }))
@@ -88,7 +102,8 @@ export const jobRelations = relations(job, ({ one, many }) => ({
 		fields: [job.clientId],
 		references: [client.id]
 	}),
-	materials: many(material)
+	materials: many(material),
+	notes: many(note),
 }))
 
 export const client = sqliteTable("client", {
@@ -104,3 +119,4 @@ export type User = typeof user.$inferSelect;
 export type Job = typeof job.$inferSelect;
 export type Client = typeof client.$inferSelect;
 export type Material = typeof material.$inferSelect;
+export type Note = typeof note.$inferSelect;

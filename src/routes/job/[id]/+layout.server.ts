@@ -15,6 +15,7 @@ export const load: LayoutServerLoad = async (event) => {
         with: {
             client: true,
             materials: true,
+            notes: true,
         }
     });
 

@@ -3,14 +3,14 @@
 	import * as Form from '$lib/components/ui/form';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
-	import { addJobFormSchema } from '../../schema';
+	import { addMaterialFormSchema } from '../../validation';
 	import { Input } from '$lib/components/ui/input';
 	import Button from '$lib/components/ui/button/button.svelte';
 
 	let { data, form: formProp } = $props();
 
 	const form = superForm(formProp?.form ?? data.form, {
-		validators: zod4Client(addJobFormSchema)
+		validators: zod4Client(addMaterialFormSchema)
 	});
 
 	const { form: formData, enhance } = form;

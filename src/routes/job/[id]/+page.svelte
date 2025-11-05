@@ -8,9 +8,9 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import DateWithIcon from '$lib/components/ui/DateWithIcon.svelte';
 	import * as Item from '$lib/components/ui/item';
-	import * as Table from '$lib/components/ui/table/index.js';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import { jobStatusToString, paymentStatusToString } from '$lib/utils.js';
+	import NoteTable from './NoteTable.svelte';
 
 	let { data } = $props();
 </script>
@@ -59,12 +59,11 @@
 				{/if}
 			</div>
 			<div class="flex flex-1 flex-col">
-				<h2 class="text-2xl font-bold">Notes</h2>
+				<h2 class="mb-4 text-2xl font-bold">Notes</h2>
 				<div class="flex grow flex-col">
-					<div class="grow"></div>
+					<NoteTable editMode={false} notes={data.job.notes}></NoteTable>
 					<div class="flex justify-between gap-8">
-						<Button class="grow" variant="secondary">Add Note</Button>
-						<Button class="grow" variant="secondary">Add Attachment</Button>
+						<Button class="grow" href={`${data.job.id}/note`} variant="secondary">Add Note</Button>
 					</div>
 				</div>
 			</div>
@@ -76,7 +75,7 @@
 					<h2 class="mb-4 text-2xl font-bold">Materials</h2>
 					<EditButton href="{data.job.id}/material"></EditButton>
 				</div>
-				<MaterialTable materials={data.job.materials} />
+				<MaterialTable materials={data.job.materials} editMode={false} />
 			</div>
 			<div class="flex flex-col gap-2">
 				<div class="flex gap-4">

@@ -9,7 +9,7 @@
 	import { getLocalTimeZone } from '@internationalized/date';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
-	import { editJobFormSchema } from './schema';
+	import { editJobFormSchema } from './validation';
 	import type z from 'zod';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import type { Client } from '$lib/server/db/schema';

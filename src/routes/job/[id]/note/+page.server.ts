@@ -1,13 +1,15 @@
 import { db } from "$lib/server/db";
-import { job } from "$lib/server/db/schema";
-import { error, fail, redirect } from "@sveltejs/kit";
+import { job, note } from "$lib/server/db/schema";
+import { error, redirect } from "@sveltejs/kit";
 import { and, eq, inArray } from "drizzle-orm";
-import { superValidate } from "sveltekit-superforms";
+import { fail, superValidate } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
-import { addMaterialFormSchema } from "../../validation";
+import { addMaterialFormSchema, addNoteFormSchema } from "../../validation";
 import type { Actions, PageServerLoad } from "./$types";
 import { material } from "$lib/server/db/schema";
 import z from "zod";
+import { mkdirSync, writeFileSync } from "fs";
+import { randomUUID } from "crypto";
 
 export const load: PageServerLoad = async (event) => {
     if (!event.locals.session || !event.locals.user) {
@@ -21,7 +23,7 @@ export const load: PageServerLoad = async (event) => {
             title: true,
         },
         with: {
-            materials: true,
+            notes: true,
         }
     });
 
@@ -30,7 +32,7 @@ export const load: PageServerLoad = async (event) => {
     }
     return {
         job: jobQuery,
-        form: await superValidate(zod4(addMaterialFormSchema)),
+        form: await superValidate(zod4(addNoteFormSchema)),
     }
 };
 
@@ -43,15 +45,15 @@ export const actions: Actions = {
         const formData = await event.request.formData();
 
         try {
-            let name = z.string().parse(formData.get('name'));
+            let id = z.string().parse(formData.get('id'));
             let userJobs = db.select({ id: job.id }).from(job).where(eq(job.userId, event.locals.user.id));
 
             await db
-                .delete(material).where(
+                .delete(note).where(
                     and(
-                        eq(material.name, name),
-                        eq(material.jobId, event.params.id),
-                        inArray(material.jobId, userJobs)
+                        eq(note.id, id),
+                        eq(note.jobId, event.params.id),
+                        inArray(note.jobId, userJobs)
                     )
                 );
         } catch (e) {
@@ -62,14 +64,30 @@ export const actions: Actions = {
         if (!event.locals.session || !event.locals.user) {
             return redirect(303, "/signin")
         }
-        const form = await superValidate(event.request, zod4(addMaterialFormSchema));
+        const form = await superValidate(event.request, zod4(addNoteFormSchema));
         if (!form.valid) return fail(400, { form });
 
         const jobId = event.params.id;
+        const noteId = randomUUID();
 
+        let filePath: string | undefined;
+        // upload attachment if it exists
+        if (form.data.file) {
+            try {
+                const bytes = await form.data.file.arrayBuffer();
+                const dirPath = `static/${event.locals.user.id}/${jobId}/`;
+                filePath = `${dirPath}/${noteId}-${form.data.file.name}`;
+                mkdirSync(dirPath, { recursive: true });
+                writeFileSync(filePath, Buffer.from(bytes));
+            } catch (err) {
+                console.log(err)
+                error(500, "Internal server error.")
+            }
+        }
         try {
-            await db.insert(material).values({ ...form.data, jobId });
+            await db.insert(note).values({ ...form.data, filePath, jobId, createdAt: new Date(), updatedAt: new Date() });
         } catch (err) {
+            console.log(err)
             error(500, "Internal server error.")
         }
     }

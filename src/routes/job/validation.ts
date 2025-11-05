@@ -1,10 +1,15 @@
 import { jobStatuses, paymentStatuses } from "$lib/schema";
 import z from "zod";
 
-export const addJobFormSchema = z.object({
+export const addMaterialFormSchema = z.object({
     name: z.string().min(1).nonempty(),
     cost: z.number().min(0).nonoptional(),
     quantity: z.coerce.number(),
+})
+
+export const addNoteFormSchema = z.object({
+    content: z.string().nonoptional(),
+    file: z.instanceof(File, { message: 'Please upload a file.' }).refine((f) => f.size < 5_000_000, 'Max 5MB upload size').nullable(),
 })
 
 export const editJobFormSchema = z.object({
