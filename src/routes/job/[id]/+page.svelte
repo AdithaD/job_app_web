@@ -58,10 +58,19 @@
 					<p>No client set.</p>
 				{/if}
 			</div>
-			<div class="flex flex-1 flex-col">
-				<h2 class="mb-4 text-2xl font-bold">Notes</h2>
+			<div class="flex grow flex-col">
+				<div class="flex justify-between">
+					<h2 class="mb-4 text-2xl font-bold">Notes</h2>
+					<EditButton href="{data.job.id}/note"></EditButton>
+				</div>
 				<div class="flex grow flex-col">
-					<NoteTable editMode={false} notes={data.job.notes}></NoteTable>
+					<div class="grow">
+						<NoteTable
+							editMode={false}
+							notes={data.job.notes}
+							attachmentPath={data.attachmentPath}
+						/>
+					</div>
 					<div class="flex justify-between gap-8">
 						<Button class="grow" href={`${data.job.id}/note`} variant="secondary">Add Note</Button>
 					</div>

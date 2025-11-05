@@ -3,7 +3,7 @@ import type { LayoutServerLoad } from "./$types";
 import { db } from "$lib/server/db";
 import { job } from "$lib/server/db/schema";
 import { and, eq } from "drizzle-orm";
-import { tuple } from "zod";
+import { getJobStaticFileServePath, getJobStaticFileWritePath } from "$lib/utils";
 
 export const load: LayoutServerLoad = async (event) => {
     if (!event.locals.session || !event.locals.user) {
@@ -15,13 +15,18 @@ export const load: LayoutServerLoad = async (event) => {
         with: {
             client: true,
             materials: true,
-            notes: true,
+            notes: {
+                with: {
+                    attachments: true,
+                }
+            },
         }
     });
 
+    const dirPath = getJobStaticFileServePath(event.locals.user.id, event.params.id);
     if (!result) {
         error(404, "Not found.");
     }
 
-    return { job: result };
+    return { job: result, attachmentPath: dirPath };
 };

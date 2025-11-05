@@ -78,10 +78,24 @@ export const note = sqliteTable("note", {
 	id: text("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
 	jobId: text('job_id').references(() => job.id, { onDelete: 'cascade' }).notNull(),
 	content: text('content').notNull(),
-	filePath: text('file_path'),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 })
+
+export const attachment = sqliteTable("attachment", {
+	name: text('name').notNull(),
+	noteId: text('note_id').references(() => note.id, { onDelete: 'cascade' }).notNull(),
+	size: integer('size').notNull(),
+}, (table) => [
+	primaryKey({ columns: [table.name, table.noteId] })
+]);
+
+export const attachmentRelations = relations(attachment, ({ one }) => ({
+	note: one(note, {
+		fields: [attachment.noteId],
+		references: [note.id],
+	})
+}));
 
 export const materialRelations = relations(material, ({ one }) => ({
 	job: one(job, {
@@ -90,11 +104,12 @@ export const materialRelations = relations(material, ({ one }) => ({
 	})
 }));
 
-export const noteRelations = relations(note, ({ one }) => ({
+export const noteRelations = relations(note, ({ one, many }) => ({
 	job: one(job, {
 		fields: [note.jobId],
 		references: [job.id],
-	})
+	}),
+	attachments: many(attachment)
 }))
 
 export const jobRelations = relations(job, ({ one, many }) => ({
@@ -120,3 +135,4 @@ export type Job = typeof job.$inferSelect;
 export type Client = typeof client.$inferSelect;
 export type Material = typeof material.$inferSelect;
 export type Note = typeof note.$inferSelect;
+export type Attachment = typeof attachment.$inferSelect;

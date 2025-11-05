@@ -25,7 +25,7 @@
 	<div class="flex w-1/2 flex-col gap-8 rounded-lg border-2 p-8">
 		<Button variant="secondary" class="w-min" href={`/job/${data.job.id}`}>Back</Button>
 		<div class="grow">
-			<NoteTable editMode={true} notes={data.job.notes} />
+			<NoteTable editMode={true} notes={data.job.notes} attachmentPath={data.attachmentPath} />
 		</div>
 		<Separator></Separator>
 		<form

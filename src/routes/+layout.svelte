@@ -12,9 +12,11 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<Sidebar.Provider>
-	<SiteSidebar></SiteSidebar>
-	<main class="grow">
-		{@render children?.()}
-	</main>
-</Sidebar.Provider>
+<div>
+	<Sidebar.Provider>
+		<SiteSidebar></SiteSidebar>
+		<main class="grow">
+			{@render children?.()}
+		</main>
+	</Sidebar.Provider>
+</div>

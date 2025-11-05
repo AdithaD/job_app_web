@@ -48,6 +48,9 @@ export type NullToUndefined<T> = {
 	: Exclude<T[K], null> | ([null] extends [T[K]] ? undefined : never);
 };
 
-export function getAttachmentPath(userId: string, jobId: string, noteId: string, fileName: string) {
-	return `/static/${userId}/${jobId}/${noteId}-${fileName}`;
+export function getJobStaticFileWritePath(userId: string, jobId: string) {
+	return `static/${userId}/${jobId}/`;
+}
+export function getJobStaticFileServePath(userId: string, jobId: string) {
+	return `/${userId}/${jobId}/`;
 }

@@ -9,13 +9,11 @@
 	<div class="flex min-h-0 flex-1 gap-8 rounded-lg border-2 bg-background p-8">
 		<div class="flex min-h-0 flex-1 flex-col">
 			<h1 class="mb-4 text-4xl font-bold">Upcoming</h1>
-			<div class="flex grow flex-col rounded-lg border-2 p-4">
+			<div class="flex min-h-0 grow flex-col gap-4 overflow-y-auto rounded-lg border-2 p-4">
 				{#if data.jobs.length > 0}
-					<div class="grid min-h-0 flex-1 gap-4 overflow-y-auto">
-						{#each data.jobs as job}
-							<DashboardJobCard {job} />
-						{/each}
-					</div>
+					{#each data.jobs as job}
+						<DashboardJobCard {job} />
+					{/each}
 				{:else}
 					<div class="flex grow flex-col items-center justify-center">No upcoming jobs</div>
 				{/if}
