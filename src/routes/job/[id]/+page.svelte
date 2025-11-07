@@ -101,7 +101,9 @@
 				</div>
 				<div class="grow"></div>
 				<div class="flex justify-between gap-8">
-					<Button class="grow" variant="secondary">Generate Quote</Button>
+					<form method="POST" action="?/quote">
+						<Button class="grow" variant="secondary" type="submit">Generate Quote</Button>
+					</form>
 					<Button class="grow" variant="secondary">Generate Invoice</Button>
 				</div>
 			</div>
