@@ -4,4 +4,4 @@
 	let { data } = $props();
 </script>
 
-<EditJobForm formProp={data.form} clients={data.clients} />
+<EditJobForm formProp={data.form} clients={data.clients} jobId={data.job.id} />
