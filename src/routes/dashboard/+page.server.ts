@@ -1,7 +1,7 @@
 import { redirect } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import { db } from "$lib/server/db";
-import { job } from "$lib/server/db/schema";
+import { client, job } from "$lib/server/db/schema";
 import { eq, desc, and, or, not } from "drizzle-orm";
 
 export const load: PageServerLoad = async (event) => {
@@ -9,16 +9,17 @@ export const load: PageServerLoad = async (event) => {
         return redirect(303, "/signin")
     }
 
+    const clients = await db.query.client.findMany({
+        where: eq(client.userId, event.locals.user.id),
+        columns: {
+            name: true,
+            id: true,
+        }
+    });
+
     const jobs = await db.query.job.findMany({
         where:
-            and(
-                eq(job.userId, event.locals.user.id),
-                or(
-                    eq(job.jobStatus, "unscheduled"),
-                    eq(job.jobStatus, "scheduled"),
-                    eq(job.jobStatus, "in_progress")
-                )
-            ),
+            eq(job.userId, event.locals.user.id),
         orderBy: desc(job.scheduledDate),
         with: {
             client: {
@@ -29,5 +30,5 @@ export const load: PageServerLoad = async (event) => {
         }
     });
 
-    return { jobs };
+    return { jobs, clients };
 };

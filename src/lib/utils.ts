@@ -49,8 +49,8 @@ export type NullToUndefined<T> = {
 };
 
 export function getJobStaticFileWritePath(userId: string, jobId: string) {
-	return `static/${userId}/${jobId}/`;
+	return `static/userdata/${userId}/${jobId}/`;
 }
 export function getJobStaticFileServePath(userId: string, jobId: string) {
-	return `/${userId}/${jobId}/`;
+	return `/userdata/${userId}/${jobId}/`;
 }
