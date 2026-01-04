@@ -4,16 +4,36 @@
 
 	import * as Table from '$lib/components/ui/table/index.js';
 	import { format } from 'date-fns';
+	import Input from '$lib/components/ui/input/input.svelte';
 
 	const { data } = $props();
+
+	let titleFilter = $state<string | null>(null);
+	let locationFilter = $state<string | null>(null);
+	const filteredJobs = $derived.by(() => {
+		return data.jobs
+			.filter(
+				(j) =>
+					!titleFilter || (titleFilter && j.title.toLowerCase().includes(titleFilter.toLowerCase()))
+			)
+			.filter(
+				(j) =>
+					!locationFilter ||
+					(locationFilter &&
+						(j.location?.toLowerCase().includes(locationFilter.toLowerCase()) ?? false))
+			);
+	});
 </script>
 
 <div class="flex h-screen flex-1 gap-8 bg-background p-8">
-	<div class="flex min-h-0 flex-4 flex-col">
-		<h1 class="mb-4 text-4xl font-bold">Job List</h1>
-		<div class="flex justify-between"></div>
+	<div class="flex min-h-0 flex-4 flex-col gap-4">
+		<h1 class="text-4xl font-bold">Job List</h1>
+		<div class="flex justify-between gap-4">
+			<Input placeholder="Name" bind:value={titleFilter}></Input>
+			<Input placeholder="Location" bind:value={locationFilter}></Input>
+		</div>
 		<div class="flex min-h-0 grow flex-col gap-4 overflow-y-auto rounded-lg border-2">
-			{#if data.jobs.length > 0}
+			{#if filteredJobs.length > 0}
 				<Table.Root>
 					<Table.Header>
 						<Table.Row>
@@ -25,7 +45,7 @@
 						</Table.Row>
 					</Table.Header>
 					<Table.Body>
-						{#each data.jobs as job}
+						{#each filteredJobs as job}
 							<Table.Row>
 								<Table.Cell class="font-medium">
 									{job.scheduledDate
