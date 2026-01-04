@@ -18,6 +18,7 @@
 <div class="flex min-h-screen flex-col gap-8 p-4 lg:flex-row lg:p-8">
 	<div class="flex flex-1 flex-col gap-12">
 		<div class="flex flex-col gap-4">
+			<Button href="/dashboard" class="w-min" variant="outline">Back</Button>
 			<div class="flex justify-between">
 				<div>
 					<div class="flex items-center justify-start gap-4">

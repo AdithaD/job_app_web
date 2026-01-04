@@ -9,8 +9,8 @@ export const load: PageServerLoad = async (event) => {
         return redirect(303, "/signin")
     }
 
-    const jobs = await db.select().from(job).orderBy(desc(job.scheduledDate))
-        .where(
+    const jobs = await db.query.job.findMany({
+        where:
             and(
                 eq(job.userId, event.locals.user.id),
                 or(
@@ -18,7 +18,16 @@ export const load: PageServerLoad = async (event) => {
                     eq(job.jobStatus, "scheduled"),
                     eq(job.jobStatus, "in_progress")
                 )
-            ));
+            ),
+        orderBy: desc(job.scheduledDate),
+        with: {
+            client: {
+                columns: {
+                    name: true,
+                }
+            }
+        }
+    });
 
     return { jobs };
 };
