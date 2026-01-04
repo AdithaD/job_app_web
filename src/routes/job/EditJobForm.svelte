@@ -21,11 +21,13 @@
 	const {
 		formProp,
 		clients,
-		jobId
+		jobId,
+		action
 	}: {
 		jobId?: string;
 		formProp: SuperValidated<z.output<typeof editJobFormSchema>>;
 		clients?: Client[];
+		action?: string;
 	} = $props();
 
 	const form = superForm(formProp, {
@@ -46,12 +48,21 @@
 			<Button variant="destructive" class="w-min" type="submit">Delete</Button>
 		</form>
 	</div>
-	<form method="POST" class="flex w-full flex-col gap-4" use:enhance>
+	<form method="POST" {action} class="flex w-full flex-col gap-4" use:enhance>
 		<Form.Field {form} name="title">
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Title</Form.Label>
 					<Input {...props} bind:value={$formData.title} />
+				{/snippet}
+			</Form.Control>
+			<Form.FieldErrors />
+		</Form.Field>
+		<Form.Field {form} name="location">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Location</Form.Label>
+					<Input {...props} bind:value={$formData.location} />
 				{/snippet}
 			</Form.Control>
 			<Form.FieldErrors />

@@ -17,9 +17,9 @@ export const addNoteFormSchema = z.object({
 
 export const editJobFormSchema = z.object({
 	title: z.string().min(1).max(50).nonempty(),
-	description: z.string().max(1000).optional().or(z.literal('')),
-	location: z.string().optional(),
-	scheduledDate: z.date().optional(),
+	description: z.string().max(1000).nullable(),
+	location: z.string().nullable(),
+	scheduledDate: z.date().nullable(),
 	jobStatus: z.enum(jobStatuses).nonoptional(),
 	paymentStatus: z.enum(paymentStatuses).nonoptional(),
 	quotedAmount: z.number().default(0),
