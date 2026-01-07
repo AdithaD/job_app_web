@@ -2,6 +2,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import z, { ZodError, type ZodSafeParseResult } from "zod";
 import type { JobStatus, PaymentStatus } from "./schema";
+import type { Material } from "./server/db/schema";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -53,4 +54,47 @@ export function getJobStaticFileWritePath(userId: string, jobId: string) {
 }
 export function getJobStaticFileServePath(userId: string, jobId: string) {
 	return `/userdata/${userId}/${jobId}/`;
+}
+/**
+ * Convert FormData with keys like:
+ *   material[0].name
+ *   material[0].cost
+ *   material[0].quantity
+ * into: Material[]
+ *
+ * @param formData - the HTMLFormFormData to parse
+ * @returns array of Material objects sorted by index
+ */
+export function getMaterialsFromFormData(formData: FormData): Material[] {
+	// Map index -> Partial<Material>
+	const materialsByIndex: Record<number, Partial<Material>> = {};
+
+	for (const [key, value] of formData.entries()) {
+		// Only handle string values; skip files or non-strings
+		if (typeof value !== 'string') continue;
+
+		const match = key.match(/^material\[(\d+)\]\.(\w+)$/);
+		if (!match) continue;
+
+		const index = Number(match[1]);
+		const field = match[2] as keyof Material;
+
+		if (!materialsByIndex[index]) {
+			materialsByIndex[index] = {};
+		}
+
+		if (field === 'cost' || field === 'quantity') {
+			const num = Number(value);
+			materialsByIndex[index][field] = Number.isNaN(num) ? 0 : num;
+		} else {
+			// name or other string fields
+			materialsByIndex[index][field] = value;
+		}
+	}
+
+	const indices = Object.keys(materialsByIndex)
+		.map(n => Number(n))
+		.sort((a, b) => a - b);
+
+	return indices.map(i => materialsByIndex[i] as Material);
 }

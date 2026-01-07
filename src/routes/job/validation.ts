@@ -1,6 +1,15 @@
 import { jobStatuses, paymentStatuses } from '$lib/schema';
 import z from 'zod';
 
+export const addWorkFormSchema = z.object({
+	title: z.string().nonempty(),
+	description: z.string(),
+	labourHours: z.number().default(0),
+	labourRate: z.number().default(0),
+	labourCostOverride: z.number(),
+	materialCostOverride: z.number(),
+})
+
 export const addMaterialFormSchema = z.object({
 	name: z.string().min(1).nonempty(),
 	cost: z.number().min(0).nonoptional(),

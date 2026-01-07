@@ -17,7 +17,11 @@ export const load: PageServerLoad = async (event) => {
 		where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
 		with: {
 			client: true,
-			materials: true
+			works: {
+				with: {
+					materials: true
+				}
+			}
 		}
 	})) as NullToUndefined<Job>;
 

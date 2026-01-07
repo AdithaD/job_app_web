@@ -1,6 +1,6 @@
 import { jobStatuses, paymentStatuses } from '../../schema';
 import { relations } from 'drizzle-orm';
-import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { randomUUID } from 'node:crypto';
 
 export const user = sqliteTable("user", {
@@ -65,14 +65,25 @@ export const job = sqliteTable("job", {
 	paidAmount: integer("paid_amount").notNull().default(0),
 });
 
+export const work = sqliteTable("work", {
+	id: text("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
+	jobId: text("job_id").references(() => job.id, { onDelete: 'cascade' }).notNull(),
+	title: text("title").notNull(),
+	description: text("description"),
+	labourHours: real("labour_hours").notNull().default(0),
+	labourRate: real("labour_rate").notNull().default(0),
+	labourCostOverride: real("labour_cost_override"),
+	materialCostOverride: real("material_cost_override")
+});
+
 export const material = sqliteTable("material", {
-	jobId: text('job_id').references(() => job.id, { onDelete: 'cascade' }).notNull(),
+	workId: text('work_id').references(() => work.id, { onDelete: 'cascade' }).notNull(),
 	name: text('name').notNull(),
 	cost: integer('cost').notNull(),
-	quantity: integer('quantity'),
+	quantity: integer('quantity').notNull(),
 }, (table) => [
-	primaryKey({ columns: [table.jobId, table.name] })
-])
+	primaryKey({ columns: [table.workId, table.name] })
+]);
 
 export const note = sqliteTable("note", {
 	id: text("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
@@ -97,10 +108,18 @@ export const attachmentRelations = relations(attachment, ({ one }) => ({
 	})
 }));
 
-export const materialRelations = relations(material, ({ one }) => ({
+export const workRelations = relations(work, ({ one, many }) => ({
 	job: one(job, {
-		fields: [material.jobId],
+		fields: [work.jobId],
 		references: [job.id],
+	}),
+	materials: many(material),
+}));
+
+export const materialRelations = relations(material, ({ one }) => ({
+	work: one(work, {
+		fields: [material.workId],
+		references: [work.id],
 	})
 }));
 
@@ -119,6 +138,7 @@ export const jobRelations = relations(job, ({ one, many }) => ({
 	}),
 	materials: many(material),
 	notes: many(note),
+	works: many(work)
 }))
 
 export const client = sqliteTable("client", {
@@ -134,5 +154,6 @@ export type User = typeof user.$inferSelect;
 export type Job = typeof job.$inferSelect;
 export type Client = typeof client.$inferSelect;
 export type Material = typeof material.$inferSelect;
+export type Work = typeof work.$inferSelect;
 export type Note = typeof note.$inferSelect;
 export type Attachment = typeof attachment.$inferSelect;

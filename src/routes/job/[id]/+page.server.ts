@@ -16,7 +16,11 @@ export const load: PageServerLoad = async (event) => {
         where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
         with: {
             client: true,
-            materials: true,
+            works: {
+                with: {
+                    materials: true,
+                }
+            },
             notes: {
                 with: {
                     attachments: true,
@@ -43,7 +47,11 @@ export const actions: Actions = {
             where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
             with: {
                 client: true,
-                materials: true,
+                works: {
+                    with: {
+                        materials: true,
+                    }
+                }
             }
         });
 
@@ -58,7 +66,7 @@ export const actions: Actions = {
         mkdirSync(dirPath, { recursive: true });
 
         console.log(fullPath)
-        createInvoice(jobData, jobData.client, jobData.materials, fullPath);
+        createInvoice(jobData, jobData.client, jobData.works, fullPath);
 
         return redirect(303, `${getJobStaticFileServePath(event.locals.user.id, event.params.id)}${fileName}`)
     }

@@ -11,6 +11,7 @@
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import { jobStatusToString, paymentStatusToString } from '$lib/utils.js';
 	import NoteTable from './NoteTable.svelte';
+	import WorksTable from './WorksTable.svelte';
 
 	let { data } = $props();
 </script>
@@ -77,10 +78,22 @@
 	<div class="flex flex-1 flex-col gap-12">
 		<div class="flex min-h-0 flex-1 grow flex-col gap-4">
 			<div class="flex justify-between">
-				<h2 class="mb-4 text-2xl font-bold">Materials</h2>
-				<EditButton href="{data.job.id}/material"></EditButton>
+				<h2 class="mb-4 text-2xl font-bold">Works</h2>
+				<Button href="{data.job.id}/work/new" variant="ghost" class="text-muted-foreground">
+					Add
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="1.5"
+						stroke="currentColor"
+						class="size-6"
+					>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+					</svg>
+				</Button>
 			</div>
-			<MaterialTable materials={data.job.materials} editMode={false} />
+			<WorksTable editMode={true} works={data.job.works} />
 		</div>
 		<div class="flex flex-col gap-2">
 			<div class="flex gap-4">
