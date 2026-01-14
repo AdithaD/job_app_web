@@ -31,32 +31,44 @@
 
 <div class="flex min-h-0 flex-1 flex-col gap-4">
 	<div class="flex min-h-0 grow flex-col">
-		<Table.Root>
+		<Table.Root class="w-full table-fixed">
 			<Table.Header>
 				<Table.Row>
-					<Table.Head class="w-[100px]">Name</Table.Head>
-					<Table.Head>Labour Cost</Table.Head>
-					<Table.Head>Material Cost</Table.Head>
-					<Table.Head>Quantity</Table.Head>
-					<Table.Head class="text-right">Total Cost</Table.Head>
+					<Table.Head class="w-full">Name</Table.Head>
+					<Table.Head class="w-full">Materials</Table.Head>
+					<Table.Head class="w-24">Material Cost</Table.Head>
+					<Table.Head class="w-24">Labour Cost</Table.Head>
+					<Table.Head class="w-24 text-right">Options</Table.Head>
+
 					{#if editMode}
 						<Table.Head class="text-right"></Table.Head>
 					{/if}
 				</Table.Row>
 			</Table.Header>
-			<Table.Body>
+			<Table.Body class="w-full">
 				{#each works as work}
 					<Table.Row>
-						<Table.Cell>
+						<Table.Cell class="w-full wrap-break-word whitespace-normal">
 							<div class="font-medium">{work.title}</div>
-							{work.description}
-						</Table.Cell>pt
-						<Table.Cell>{calculateLabourCost(work)}</Table.Cell>
-						<Table.Cell>
-							{calculateMaterialCost(work, work.materials)}
+							<div class="text-sm text-muted-foreground">
+								{work.description}
+							</div>
 						</Table.Cell>
+
+						<Table.Cell class="wrap-break-word whitespace-pre-line">
+							{work.materials.map((m) => `${m.quantity}x ${m.name}`).join('\n')}
+						</Table.Cell>
+
+						<Table.Cell class="w-24 text-right whitespace-nowrap">
+							${calculateMaterialCost(work, work.materials)}
+						</Table.Cell>
+
+						<Table.Cell class="w-24 text-right whitespace-nowrap">
+							${calculateLabourCost(work)}
+						</Table.Cell>
+
 						{#if editMode}
-							<Table.Cell class="self-end">
+							<Table.Cell class="w-24 self-end text-right">
 								<EditButton href="/job/{jobId}/work/{work.id}"></EditButton>
 							</Table.Cell>
 						{/if}
