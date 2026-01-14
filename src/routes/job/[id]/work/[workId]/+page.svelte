@@ -11,4 +11,10 @@
 	});
 </script>
 
-<EditWorkForm formProp={data.form} materials={data.materials} jobId={data.jobId} />
+<EditWorkForm
+	formProp={data.form}
+	materials={data.materials}
+	jobId={data.jobId}
+	workId={data.work.id}
+	action={'edit'}
+/>

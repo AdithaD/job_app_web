@@ -7,9 +7,8 @@
 	import FormContainer from '$lib/components/ui/FormContainer.svelte';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import { addWorkFormSchema } from '../../validation.js';
-	import MaterialTable from '../MaterialTable.svelte';
 	import z from 'zod';
-	import type { Material } from '$lib/server/db/schema.js';
+	import { type Material } from '$lib/server/db/schema.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
 
 	const {
@@ -39,7 +38,14 @@
 </script>
 
 <FormContainer>
-	<Button variant="secondary" class="w-min" href={`/job/${jobId}`}>Back</Button>
+	<div class="flex justify-between">
+		<Button variant="secondary" class="w-min" href={`/job/${jobId}`}>Back</Button>
+		{#if workId}
+			<form action="?/delete" method="POST">
+				<Button variant="destructive" class="w-min" type="submit">Delete</Button>
+			</form>
+		{/if}
+	</div>
 	<form method="POST" {action} class="flex w-full flex-col gap-4" use:enhance>
 		<div class="flex flex-col gap-4">
 			<Form.Field {form} name="title">

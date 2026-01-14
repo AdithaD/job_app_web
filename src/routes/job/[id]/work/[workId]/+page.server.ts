@@ -49,7 +49,27 @@ export const load: PageServerLoad = async (event) => {
 };
 
 export const actions: Actions = {
-	default: async (event) => {
+	delete: async (event) => {
+		if (!event.locals.session || !event.locals.user) {
+			throw redirect(303, '/signin');
+		}
+
+		const ownedJob = await db
+			.select({ id: job.id })
+			.from(job)
+			.where(and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)))
+			.get();
+
+		if (!ownedJob) {
+			throw error(403, 'Forbidden');
+		}
+
+		await db.delete(work).where(and(eq(work.id, event.params.workId), eq(work.jobId, ownedJob.id)));
+
+		throw redirect(303, `/job/${event.params.id}`);
+	},
+
+	edit: async (event) => {
 		if (!event.locals.session || !event.locals.user) {
 			return redirect(303, '/signin');
 		}
