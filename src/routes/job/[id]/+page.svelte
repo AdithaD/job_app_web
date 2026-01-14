@@ -93,7 +93,7 @@
 					</svg>
 				</Button>
 			</div>
-			<WorksTable editMode={true} works={data.job.works} />
+			<WorksTable jobId={data.job.id} editMode={true} works={data.job.works} />
 		</div>
 		<div class="flex flex-col gap-2">
 			<div class="flex gap-4">

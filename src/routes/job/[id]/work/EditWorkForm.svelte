@@ -30,10 +30,12 @@
 		validators: zod4Client(addWorkFormSchema)
 	});
 
-	let materialCount = $state<number[]>([]);
+	let materialCount = $state<number>(materials.length);
+	let newMaterials = $state<Omit<Material, 'workId'>[]>(materials);
 	let i = $state(0);
 
 	const { form: formData, enhance } = form;
+	console.log(JSON.stringify(formData));
 </script>
 
 <FormContainer>
@@ -83,16 +85,31 @@
 		<Separator class="my-4" orientation="horizontal" />
 		<h2>Materials</h2>
 		<div class="flex flex-col gap-4">
-			{#each materialCount as m, i (m)}
+			{#each Array(materialCount).keys() as i}
 				<div class="flex gap-4">
-					<Input name="material[{m}].name" required placeholder="Name" />
-					<Input name="material[{m}].cost" type="number" placeholder="Cost" />
-					<Input name="material[{m}].quantity" type="number" placeholder="Quantity" />
+					<Input
+						name="material[{i}].name"
+						bind:value={newMaterials[i].name}
+						required
+						placeholder="Name"
+					/>
+					<Input
+						name="material[{i}].cost"
+						bind:value={newMaterials[i].cost}
+						type="number"
+						placeholder="Cost"
+					/>
+					<Input
+						name="material[{i}].quantity"
+						bind:value={newMaterials[i].quantity}
+						type="number"
+						placeholder="Quantity"
+					/>
 					<Button
 						variant="outline"
 						onclick={() => {
-							materialCount.splice(i, 1);
-							materialCount = materialCount;
+							newMaterials.splice(i, 1);
+							materialCount = newMaterials.length;
 						}}
 					>
 						X
@@ -103,8 +120,12 @@
 		<Button
 			variant="secondary"
 			onclick={() => {
-				materialCount.push(i);
-				i += 1;
+				newMaterials.push({
+					name: '',
+					cost: 0,
+					quantity: 1
+				});
+				materialCount = newMaterials.length;
 			}}
 		>
 			Add material
