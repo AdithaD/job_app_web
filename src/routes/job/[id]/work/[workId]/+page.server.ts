@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { job, material, work, type Work } from '$lib/server/db/schema';
+import { job, material, work, type Work, workTemplate, templateMaterial } from '$lib/server/db/schema';
 import { error, redirect, fail } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
@@ -108,5 +108,66 @@ export const actions: Actions = {
 			error(500, 'Internal server error.');
 		}
 		redirect(303, `/job/${jobId}`);
+	},
+
+	saveAsTemplate: async (event) => {
+		if (!event.locals.session || !event.locals.user) {
+			return redirect(303, '/signin');
+		}
+
+		const ownedJob = await db
+			.select({ id: job.id })
+			.from(job)
+			.where(and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)))
+			.get();
+
+		if (!ownedJob) {
+			throw error(403, 'Forbidden');
+		}
+
+		// Get the work with materials
+		const workQuery = await db.query.work.findFirst({
+			where: and(eq(work.jobId, event.params.id), eq(work.id, event.params.workId)),
+			with: {
+				materials: true
+			}
+		});
+
+		if (!workQuery) {
+			throw error(404, 'Work not found');
+		}
+
+		try {
+			// Create the template
+			const insertedTemplate = (
+				await db
+					.insert(workTemplate)
+					.values({
+						userId: event.locals.user.id,
+						title: workQuery.title,
+						description: workQuery.description,
+						labourHours: workQuery.labourHours,
+						labourRate: workQuery.labourRate,
+						createdAt: new Date()
+					})
+					.returning()
+			)[0];
+
+			// Copy materials to template materials
+			if (workQuery.materials.length > 0) {
+				const templateMaterials = workQuery.materials.map(m => ({
+					templateId: insertedTemplate.id,
+					name: m.name,
+					cost: m.cost,
+					quantity: m.quantity
+				}));
+				await db.insert(templateMaterial).values(templateMaterials);
+			}
+
+			return { success: true, message: 'Template saved successfully!' };
+		} catch (err) {
+			console.log(err);
+			return fail(500, { error: 'Failed to save template' });
+		}
 	}
 };

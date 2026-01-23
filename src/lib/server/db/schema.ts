@@ -76,6 +76,25 @@ export const work = sqliteTable("work", {
 	materialCostOverride: real("material_cost_override")
 });
 
+export const workTemplate = sqliteTable("work_template", {
+	id: text("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
+	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	title: text("title").notNull(),
+	description: text("description"),
+	labourHours: real("labour_hours").notNull().default(0),
+	labourRate: real("labour_rate").notNull().default(0),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const templateMaterial = sqliteTable("template_material", {
+	templateId: text('template_id').references(() => workTemplate.id, { onDelete: 'cascade' }).notNull(),
+	name: text('name').notNull(),
+	cost: integer('cost').notNull(),
+	quantity: integer('quantity').notNull(),
+}, (table) => [
+	primaryKey({ columns: [table.templateId, table.name] })
+]);
+
 export const material = sqliteTable("material", {
 	workId: text('work_id').references(() => work.id, { onDelete: 'cascade' }).notNull(),
 	name: text('name').notNull(),
@@ -123,6 +142,21 @@ export const materialRelations = relations(material, ({ one }) => ({
 	})
 }));
 
+export const workTemplateRelations = relations(workTemplate, ({ one, many }) => ({
+	user: one(user, {
+		fields: [workTemplate.userId],
+		references: [user.id],
+	}),
+	materials: many(templateMaterial),
+}));
+
+export const templateMaterialRelations = relations(templateMaterial, ({ one }) => ({
+	template: one(workTemplate, {
+		fields: [templateMaterial.templateId],
+		references: [workTemplate.id],
+	})
+}));
+
 export const noteRelations = relations(note, ({ one, many }) => ({
 	job: one(job, {
 		fields: [note.jobId],
@@ -157,3 +191,5 @@ export type Material = typeof material.$inferSelect;
 export type Work = typeof work.$inferSelect;
 export type Note = typeof note.$inferSelect;
 export type Attachment = typeof attachment.$inferSelect;
+export type WorkTemplate = typeof workTemplate.$inferSelect;
+export type TemplateMaterial = typeof templateMaterial.$inferSelect;

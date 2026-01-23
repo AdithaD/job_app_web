@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { job, work } from '$lib/server/db/schema';
+import { job, work, workTemplate } from '$lib/server/db/schema';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
@@ -24,9 +24,39 @@ export const load: PageServerLoad = async (event) => {
 	if (!jobQuery) {
 		return error(404, 'Not found.');
 	}
+
+	// Load user's work templates
+	const templates = await db.query.workTemplate.findMany({
+		where: eq(workTemplate.userId, event.locals.user.id),
+		with: {
+			materials: true
+		},
+		orderBy: (workTemplate, { desc }) => [desc(workTemplate.createdAt)]
+	});
+
+	// Check for template ID in URL params
+	const templateId = event.url.searchParams.get('templateId');
+	let initialData = {};
+	let initialMaterials: Array<{ templateId: string; name: string; cost: number; quantity: number }> = [];
+
+	if (templateId) {
+		const selectedTemplate = templates.find(t => t.id === templateId);
+		if (selectedTemplate) {
+			initialData = {
+				title: selectedTemplate.title,
+				description: selectedTemplate.description,
+				labourHours: selectedTemplate.labourHours,
+				labourRate: selectedTemplate.labourRate
+			};
+			initialMaterials = selectedTemplate.materials;
+		}
+	}
+
 	return {
 		jobId: jobQuery.id,
-		form: await superValidate(zod4(addWorkFormSchema))
+		templates,
+		initialMaterials,
+		form: await superValidate(initialData, zod4(addWorkFormSchema))
 	};
 };
 

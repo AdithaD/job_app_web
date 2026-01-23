@@ -16,13 +16,17 @@
 		jobId,
 		workId,
 		materials,
-		action
+		action,
+		templateButton,
+		templateDropdown
 	}: {
 		jobId: string;
 		workId?: string;
 		materials: Material[];
 		formProp: SuperValidated<z.output<typeof addWorkFormSchema>>;
 		action?: string;
+		templateButton?: any;
+		templateDropdown?: any;
 	} = $props();
 
 	const form = superForm(formProp, {
@@ -33,6 +37,12 @@
 	let newMaterials = $state<Omit<Material, 'workId'>[]>(materials);
 	let i = $state(0);
 
+	// Update materials when prop changes (e.g., when template is selected)
+	$effect(() => {
+		newMaterials = [...materials];
+		materialCount = materials.length;
+	});
+
 	const { form: formData, enhance } = form;
 	console.log(JSON.stringify(formData));
 </script>
@@ -40,13 +50,21 @@
 <FormContainer>
 	<div class="flex justify-between">
 		<Button variant="secondary" class="w-min" href={`/job/${jobId}`}>Back</Button>
-		{#if workId}
-			<form action="?/delete" method="POST">
-				<Button variant="destructive" class="w-min" type="submit">Delete</Button>
-			</form>
-		{/if}
+		<div class="flex items-center gap-2">
+			{#if templateButton}
+				{@render templateButton()}
+			{/if}
+			{#if workId}
+				<form action="?/delete" method="POST">
+					<Button variant="destructive" class="w-min" type="submit">Delete</Button>
+				</form>
+			{/if}
+		</div>
 	</div>
 	<form method="POST" {action} class="flex w-full flex-col gap-4" use:enhance>
+		{#if templateDropdown}
+			{@render templateDropdown()}
+		{/if}
 		<div class="flex flex-col gap-4">
 			<Form.Field {form} name="title">
 				<Form.Control>
