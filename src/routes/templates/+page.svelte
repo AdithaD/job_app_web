@@ -11,10 +11,8 @@
 </script>
 
 <div class="flex min-h-screen flex-col gap-8 bg-background p-8">
-	<div class="flex items-center justify-between">
-		<h1 class="text-4xl font-bold">Manage Work Templates</h1>
-		<Button variant="secondary" href="/dashboard">Back to Dashboard</Button>
-	</div>
+	<Button onclick={() => history.back()} class="w-min" variant="outline">Back</Button>
+	<h1 class="text-4xl font-bold">Manage Work Templates</h1>
 
 	{#if data.templates.length === 0}
 		<Card.Root>

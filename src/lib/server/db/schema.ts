@@ -65,6 +65,30 @@ export const job = sqliteTable("job", {
 	paidAmount: integer("paid_amount").notNull().default(0),
 });
 
+export const client = sqliteTable("client", {
+	id: text("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
+	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	name: text("name").notNull(),
+	email: text("email"),
+	phone: text("phone"),
+	address: text("address"),
+});
+
+export const businessSettings = sqliteTable("business_settings", {
+	userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+	businessName: text('business_name').notNull().default(''),
+	abn: text('abn'),
+	address: text('address'),
+	phone: text('phone'),
+	email: text('email'),
+	bsb: text('bsb'),
+	accountNumber: text('account_number'),
+	accountName: text('account_name'),
+	logo: text('logo'),
+	terms: text('terms'),
+	defaultNotes: text('default_notes'),
+});
+
 export const work = sqliteTable("work", {
 	id: text("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
 	jobId: text("job_id").references(() => job.id, { onDelete: 'cascade' }).notNull(),
@@ -175,13 +199,10 @@ export const jobRelations = relations(job, ({ one, many }) => ({
 	works: many(work)
 }))
 
-export const client = sqliteTable("client", {
-	id: text("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
-	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
-	name: text("name").notNull(),
-	phone: text("phone"),
-	address: text("address"),
-});
+export const clientRelations = relations(client, ({ many }) => ({
+	jobs: many(job)
+}));
+
 
 export type Session = typeof session.$inferSelect;
 export type User = typeof user.$inferSelect;
@@ -193,3 +214,4 @@ export type Note = typeof note.$inferSelect;
 export type Attachment = typeof attachment.$inferSelect;
 export type WorkTemplate = typeof workTemplate.$inferSelect;
 export type TemplateMaterial = typeof templateMaterial.$inferSelect;
+export type BusinessSettings = typeof businessSettings.$inferSelect;

@@ -112,17 +112,16 @@
 					</Table.Header>
 					<Table.Body>
 						{#each filteredJobs as job}
-							<Table.Row>
+							<Table.Row
+								class="cursor-pointer hover:bg-accent"
+								onclick={() => (window.location.href = `/job/${job.id}`)}
+							>
 								<Table.Cell class="font-medium">
 									{job.scheduledDate
 										? format(job.scheduledDate, 'hh:mm dd/MM/yyyy')
 										: 'No date set.'}
 								</Table.Cell>
-								<Table.Cell class="font-bold"
-									><a class="underline transition-colors hover:text-primary" href="/job/{job.id}"
-										>{job.title}</a
-									></Table.Cell
-								>
+								<Table.Cell class="font-bold">{job.title}</Table.Cell>
 								<Table.Cell>{job.location ?? 'No location set.'}</Table.Cell>
 								<Table.Cell>{job.client?.name ?? 'Unspecified'}</Table.Cell>
 								<Table.Cell class="text-right">{job.quotedAmount}</Table.Cell>
@@ -141,6 +140,8 @@
 			<Button class="h-16 font-bold" variant="default" href="/job/new">Add New Job</Button>
 			<Button variant="secondary">Quick Search</Button>
 			<Button variant="outline" href="/templates">Manage Templates</Button>
+			<Button variant="outline" href="/clients">Manage Clients</Button>
+			<Button variant="outline" href="/settings">Business Settings</Button>
 		</div>
 	</div>
 </div>

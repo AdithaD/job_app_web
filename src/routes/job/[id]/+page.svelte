@@ -8,12 +8,26 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import DateWithIcon from '$lib/components/ui/DateWithIcon.svelte';
 	import * as Item from '$lib/components/ui/item';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { Input } from '$lib/components/ui/input';
+	import Label from '$lib/components/ui/label/label.svelte';
+	import { Textarea } from '$lib/components/ui/textarea';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import { jobStatusToString, paymentStatusToString } from '$lib/utils.js';
 	import NoteTable from './NoteTable.svelte';
 	import WorksTable from './WorksTable.svelte';
+	import { enhance } from '$app/forms';
 
 	let { data } = $props();
+
+	let quoteDialogOpen = $state(false);
+	let invoiceDialogOpen = $state(false);
+	let showMaterials = $state(true);
+	let discount = $state(0);
+	let notes = $state('');
+	let dueDays = $state(30);
+	let isGenerating = $state(false);
 </script>
 
 <div class="flex min-h-screen flex-col items-stretch gap-8 p-4 lg:p-8">
@@ -60,13 +74,20 @@
 								<Item.Title>
 									{data.job.client.name}
 								</Item.Title>
-								<Item.Description>
-									{data.job.client.address}<br />
-									{data.job.client.phone}
-								</Item.Description>
+								<div class="text-sm text-muted-foreground">
+									{#if data.job.client.email}
+										<div class="break-all">{data.job.client.email}</div>
+									{/if}
+									{#if data.job.client.phone}
+										<div>{data.job.client.phone}</div>
+									{/if}
+									{#if data.job.client.address}
+										<div>{data.job.client.address}</div>
+									{/if}
+								</div>
 							</Item.Content>
 							<Item.Actions>
-								<Button variant="outline">Details</Button>
+								<Button variant="outline" href="/clients/{data.job.client.id}">Details</Button>
 							</Item.Actions>
 						</Item.Root>
 					{:else}
@@ -97,45 +118,212 @@
 			<WorksTable jobId={data.job.id} editMode={true} works={data.job.works} />
 		</div>
 	</div>
-	<div class="flex flex-col gap-2">
-		<div class="flex justify-between">
-			<div>
-				<div class="flex gap-4">
-					<h2 class="text-2xl font-bold">Pricing</h2>
-					<Badge variant="outline">{paymentStatusToString(data.job.paymentStatus)}</Badge>
+	<div class="flex flex-1 flex-col gap-8 lg:flex-row">
+		<div class="flex flex-1 flex-col gap-4">
+			<div class="flex justify-between">
+				<div>
+					<div class="flex gap-4">
+						<h2 class="text-2xl font-bold">Pricing</h2>
+						<Badge variant="outline">{paymentStatusToString(data.job.paymentStatus)}</Badge>
+					</div>
 				</div>
 			</div>
-			<div class="flex justify-between gap-8">
-				<form method="POST" action="?/quote">
-					<Button class="grow" variant="secondary" type="submit">Generate Quote</Button>
-				</form>
-				<Button class="grow" variant="secondary">Generate Invoice</Button>
+			<div>
+				<div>
+					Amount Quoted: ${data.job.quotedAmount}
+				</div>
+				<div>
+					Amount Paid: ${data.job.paidAmount}
+				</div>
+			</div>
+			<div class="grow"></div>
+			<div class="flex gap-2">
+				<Button class="grow" variant="secondary" onclick={() => (quoteDialogOpen = true)}
+					>Generate Quote</Button
+				>
+				<Button class="grow" variant="secondary" onclick={() => (invoiceDialogOpen = true)}>
+					Generate Invoice
+				</Button>
 			</div>
 		</div>
-		<div>
-			<div>
-				Amount Quoted: ${data.job.quotedAmount}
-			</div>
-			<div>
-				Amount Paid: ${data.job.paidAmount}
-			</div>
-		</div>
-		<div class="grow"></div>
-	</div>
-	<div class="flex flex-1 flex-col gap-12">
-		<div class="flex grow flex-col">
+		<div class="flex flex-1 flex-col gap-4">
 			<div class="flex justify-between">
-				<h2 class="mb-4 text-2xl font-bold">Notes</h2>
+				<h2 class="text-2xl font-bold">Notes</h2>
 				<EditButton href="{data.job.id}/note"></EditButton>
 			</div>
-			<div class="flex grow flex-col">
+			<div class="flex grow flex-col gap-4">
 				<div class="grow">
 					<NoteTable editMode={false} notes={data.job.notes} attachmentPath={data.attachmentPath} />
 				</div>
-				<div class="flex justify-between gap-8">
-					<Button class="grow" href={`${data.job.id}/note`} variant="secondary">Add Note</Button>
-				</div>
+				<Button class="w-full" href={`${data.job.id}/note`} variant="secondary">Add Note</Button>
 			</div>
 		</div>
 	</div>
 </div>
+
+<!-- Quote Generation Dialog -->
+<Dialog.Root bind:open={quoteDialogOpen}>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>Generate Quote</Dialog.Title>
+			<Dialog.Description>
+				Configure quote options before generating the PDF document.
+			</Dialog.Description>
+		</Dialog.Header>
+		<form
+			method="POST"
+			action="?/quote"
+			use:enhance={() => {
+				isGenerating = true;
+				return async ({ update }) => {
+					await update();
+					isGenerating = false;
+					quoteDialogOpen = false;
+				};
+			}}
+		>
+			<div class="space-y-4 py-4">
+				<div class="flex items-center space-x-2">
+					<Checkbox
+						id="showMaterials"
+						name="showMaterials"
+						value="true"
+						bind:checked={showMaterials}
+					/>
+					<Label for="showMaterials" class="cursor-pointer font-normal">
+						Show material breakdown in quote
+					</Label>
+				</div>
+
+				<div class="space-y-2">
+					<Label for="discount">Discount (%)</Label>
+					<Input
+						id="discount"
+						name="discount"
+						type="number"
+						min="0"
+						max="100"
+						step="0.1"
+						bind:value={discount}
+						placeholder="0"
+					/>
+				</div>
+
+				<div class="space-y-2">
+					<Label for="notes">Notes (optional)</Label>
+					<Textarea
+						id="notes"
+						name="notes"
+						bind:value={notes}
+						placeholder="Add any additional notes for this quote..."
+						rows={3}
+					/>
+				</div>
+			</div>
+
+			<Dialog.Footer>
+				<Button
+					type="button"
+					variant="outline"
+					onclick={() => (quoteDialogOpen = false)}
+					disabled={isGenerating}
+				>
+					Cancel
+				</Button>
+				<Button type="submit" disabled={isGenerating}>
+					{isGenerating ? 'Generating...' : 'Generate Quote'}
+				</Button>
+			</Dialog.Footer>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- Invoice Generation Dialog -->
+<Dialog.Root bind:open={invoiceDialogOpen}>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>Generate Invoice</Dialog.Title>
+			<Dialog.Description>
+				Configure invoice options before generating the PDF document.
+			</Dialog.Description>
+		</Dialog.Header>
+		<form
+			method="POST"
+			action="?/invoice"
+			use:enhance={() => {
+				isGenerating = true;
+				return async ({ update }) => {
+					await update();
+					isGenerating = false;
+					invoiceDialogOpen = false;
+				};
+			}}
+		>
+			<div class="space-y-4 py-4">
+				<div class="flex items-center space-x-2">
+					<Checkbox
+						id="showMaterialsInv"
+						name="showMaterials"
+						value="true"
+						bind:checked={showMaterials}
+					/>
+					<Label for="showMaterialsInv" class="cursor-pointer font-normal">
+						Show material breakdown in invoice
+					</Label>
+				</div>
+
+				<div class="space-y-2">
+					<Label for="dueDays">Payment Due (days)</Label>
+					<Input
+						id="dueDays"
+						name="dueDays"
+						type="number"
+						min="0"
+						step="1"
+						bind:value={dueDays}
+						placeholder="30"
+					/>
+				</div>
+
+				<div class="space-y-2">
+					<Label for="discountInv">Discount (%)</Label>
+					<Input
+						id="discountInv"
+						name="discount"
+						type="number"
+						min="0"
+						max="100"
+						step="0.1"
+						bind:value={discount}
+						placeholder="0"
+					/>
+				</div>
+
+				<div class="space-y-2">
+					<Label for="notesInv">Notes (optional)</Label>
+					<Textarea
+						id="notesInv"
+						name="notes"
+						bind:value={notes}
+						placeholder="Add any additional notes for this invoice..."
+						rows={3}
+					/>
+				</div>
+			</div>
+
+			<Dialog.Footer>
+				<Button
+					type="button"
+					variant="outline"
+					onclick={() => (invoiceDialogOpen = false)}
+					disabled={isGenerating}
+				>
+					Cancel
+				</Button>
+				<Button type="submit" disabled={isGenerating}>
+					{isGenerating ? 'Generating...' : 'Generate Invoice'}
+				</Button>
+			</Dialog.Footer>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>

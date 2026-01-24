@@ -143,6 +143,15 @@
 							<Form.FieldErrors />
 						</Form.Field>
 					</div>
+					<Form.Field {form} name="newClientEmail">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label>Email</Form.Label>
+								<Input {...props} type="email" bind:value={$formData.newClientEmail} />
+							{/snippet}
+						</Form.Control>
+						<Form.FieldErrors />
+					</Form.Field>
 					<Form.Field {form} name="newClientAddress">
 						<Form.Control>
 							{#snippet children({ props })}

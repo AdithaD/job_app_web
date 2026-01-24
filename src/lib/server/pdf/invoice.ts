@@ -1,243 +1,546 @@
 import PDFDocument from "pdfkit";
-import type { Client, Job, Material } from "../db/schema";
+import type { Client, Work, Material, BusinessSettings } from "../db/schema";
 import { createWriteStream } from "fs";
-export type Company = {
-    name: string;
-    address: string;
-    phone: string;
-    email: string;
-}
+
+export type InvoiceType = 'quote' | 'invoice';
+
 export type InvoiceData = {
+    type: InvoiceType;
     invoiceNumber: string;
-    date: string;
-    dueDate: string;
-    paymentTerms: string;
-    project: string;
-    company: Company;
+    jobNumber: number;
+    date: Date;
+    dueDate?: Date;
     client: Client | null;
-    materials: Material[];
+    works: (Work & { materials: Material[] })[];
+    businessSettings: BusinessSettings;
+    showMaterials: boolean;
     discount: number;
-    gst: number;
-    notes: string;
+    notes?: string;
 }
 
-class InvoiceGenerator {
+class ModernInvoiceGenerator {
     doc: PDFKit.PDFDocument;
     data: InvoiceData;
+    primaryColor: string = '#2563eb'; // Blue
+    accentColor: string = '#64748b'; // Slate gray
+    pageWidth: number = 595.28; // A4 width in points
+    margin: number = 50;
 
     constructor(data: InvoiceData) {
-        this.doc = new PDFDocument({ margin: 50 });
+        this.doc = new PDFDocument({
+            margin: this.margin,
+            size: 'A4'
+        });
         this.data = data;
     }
 
     generateInvoice(filePath: string) {
-        // Create write stream
         this.doc.pipe(createWriteStream(filePath));
 
-        // Add content
-        this.addHeader(this.data);
-        this.addCompanyInfo(this.data.company);
-        if (this.data.client)
-            this.addClientInfo(this.data.client);
-        this.addInvoiceDetails(this.data);
-        this.addMaterialsTable(this.data.materials);
-        this.addTotals(this.data);
-        this.addFooter(this.data);
+        this.addHeader();
+        this.addBusinessAndClientInfo();
+        this.addInvoiceDetails();
+        this.addTotalHighlight();
+        this.addWorksTable();
+        this.addTotalsSection();
+        this.addFooter();
 
-        // Finalize the PDF
         this.doc.end();
     }
 
-    addHeader(invoiceData: InvoiceData) {
-        this.doc
-            .fontSize(24)
-            .font('Helvetica-Bold')
-            .text('INVOICE', 50, 50)
-            .font('Helvetica')
-            .fontSize(12)
-            .text('UDElectrics', 50, 75)
-            .text(`Invoice #: ${invoiceData.invoiceNumber}`, 400, 55)
-            .text(`Date: ${invoiceData.date}`, 400, 70)
-            .text(`Due Date: ${invoiceData.dueDate}`, 400, 85);
+    addHeader() {
+        const headerY = 50;
 
-        // Add a line separator
+        // Document type (QUOTE or INVOICE) - large and bold
         this.doc
-            .moveTo(50, 120)
-            .lineTo(550, 120)
+            .fontSize(32)
+            .fillColor(this.primaryColor)
+            .font('Helvetica-Bold')
+            .text(this.data.type.toUpperCase(), this.margin, headerY);
+
+        // Logo space (top right) - if logo exists
+        if (this.data.businessSettings.logo) {
+            // Add logo here if needed
+            // this.doc.image(this.data.businessSettings.logo, this.pageWidth - this.margin - 100, headerY, { width: 100 });
+        }
+
+        // Add divider line
+        this.doc
+            .strokeColor(this.primaryColor)
+            .lineWidth(2)
+            .moveTo(this.margin, headerY + 45)
+            .lineTo(this.pageWidth - this.margin, headerY + 45)
             .stroke();
     }
-    addCompanyInfo(company: Company) {
+
+    addBusinessAndClientInfo() {
+        const startY = 120;
+        const columnWidth = (this.pageWidth - 2 * this.margin) / 2;
+
+        // Business Details (Left Column)
         this.doc
-            .fontSize(14)
+            .fontSize(10)
+            .fillColor(this.accentColor)
             .font('Helvetica-Bold')
-            .text('FROM:', 50, 140)
-            .fontSize(12)
-            .font('Helvetica')
-            .text(company.name, 50, 160)
-            .text(company.address, 50, 175)
-            .text(`Phone: ${company.phone}`, 50, 205)
-            .text(`Email: ${company.email}`, 50, 220);
-    }
+            .text('FROM', this.margin, startY);
 
-    addClientInfo(client: Client) {
+        let currentY = startY + 15;
         this.doc
-            .fontSize(14)
+            .fontSize(12)
+            .fillColor('black')
             .font('Helvetica-Bold')
-            .text('BILL TO:', 300, 140)
-            .fontSize(12)
-            .font('Helvetica')
-            .text(client.name, 300, 160)
-            .text(client.address ?? "", 300, 175)
-            .text(`Phone: ${client.phone}`, 300, 205)
-    }
+            .text(this.data.businessSettings.businessName || 'Business Name', this.margin, currentY);
 
-    addInvoiceDetails(invoiceData: InvoiceData) {
-        // Add another line separator
+        currentY += 15;
+        this.doc.fontSize(9).font('Helvetica').fillColor('#4b5563');
+
+        if (this.data.businessSettings.abn) {
+            this.doc.text(`ABN: ${this.data.businessSettings.abn}`, this.margin, currentY);
+            currentY += 12;
+        }
+
+        if (this.data.businessSettings.address) {
+            this.doc.text(this.data.businessSettings.address, this.margin, currentY, { width: columnWidth - 20 });
+            currentY += 12;
+        }
+
+        if (this.data.businessSettings.phone) {
+            this.doc.text(`Phone: ${this.data.businessSettings.phone}`, this.margin, currentY);
+            currentY += 12;
+        }
+
+        if (this.data.businessSettings.email) {
+            this.doc.text(`Email: ${this.data.businessSettings.email}`, this.margin, currentY);
+        }
+
+        // Client Details (Right Column)
+        const rightColumnX = this.margin + columnWidth + 20;
+        currentY = startY;
+
         this.doc
-            .moveTo(50, 250)
-            .lineTo(550, 250)
-            .stroke();
-
-        this.doc
-            .fontSize(12)
-            .font('Helvetica')
-            .text(`Payment Terms:`, 50, 270)
-            .text(invoiceData.paymentTerms, 50, 290)
-    }
-
-    addMaterialsTable(materials: Material[]) {
-        const tableTop = 320;
-        const itemHeight = 25;
-
-        // Table headers
-        this.doc
-            .fontSize(12)
+            .fontSize(10)
+            .fillColor(this.accentColor)
             .font('Helvetica-Bold')
-            .text('Description', 50, tableTop)
-            .text('Qty', 250, tableTop, { width: 50, align: 'center' })
-            .text('Unit Price', 320, tableTop, { width: 80, align: 'right' })
-            .text('Total', 470, tableTop, { width: 80, align: 'right' });
+            .text('BILL TO', rightColumnX, currentY);
 
-        // Header underline
-        this.doc
-            .moveTo(50, tableTop + 15)
-            .lineTo(550, tableTop + 15)
-            .stroke();
+        currentY += 15;
 
-        // Table rows
-        let currentY = tableTop + 30;
-        this.doc.font('Helvetica');
-
-        materials.forEach((item, index) => {
-            const itemTotal = (item.quantity ?? 1) * item.cost;
-
+        if (this.data.client) {
             this.doc
-                .text(item.name, 50, currentY, { width: 180 })
-                .text(item.quantity?.toString() ?? "", 250, currentY, { width: 50, align: 'center' })
-                .text(`$${item.cost.toFixed(2)}`, 320, currentY, { width: 80, align: 'right' })
-                .text(`$${itemTotal.toFixed(2)}`, 470, currentY, { width: 80, align: 'right' });
+                .fontSize(12)
+                .fillColor('black')
+                .font('Helvetica-Bold')
+                .text(this.data.client.name, rightColumnX, currentY);
 
-            currentY += itemHeight;
+            currentY += 15;
+            this.doc.fontSize(9).font('Helvetica').fillColor('#4b5563');
 
-            // Add line between items
-            if (index < materials.length - 1) {
-                this.doc
-                    .moveTo(50, currentY - 5)
-                    .lineTo(550, currentY - 5)
-                    .strokeColor('#CCCCCC')
-                    .stroke()
-                    .strokeColor('black');
+            if (this.data.client.email) {
+                this.doc.text(this.data.client.email, rightColumnX, currentY);
+                currentY += 12;
             }
-        });
 
-        return currentY;
+            if (this.data.client.phone) {
+                this.doc.text(this.data.client.phone, rightColumnX, currentY);
+                currentY += 12;
+            }
+
+            if (this.data.client.address) {
+                this.doc.text(this.data.client.address, rightColumnX, currentY, { width: columnWidth - 20 });
+            }
+        } else {
+            this.doc
+                .fontSize(9)
+                .fillColor('#9ca3af')
+                .font('Helvetica')
+                .text('No client specified', rightColumnX, currentY);
+        }
     }
 
-    addTotals(invoiceData: InvoiceData) {
-        const subtotal = invoiceData.materials.reduce((sum, item) => sum + (item.quantity ?? 1 * item.cost), 0);
-        const discountAmount = subtotal * (invoiceData.discount / 100);
+    addInvoiceDetails() {
+        const detailsY = 240;
+        const rightColumnX = this.pageWidth - this.margin - 150;
+
+        // Create details box
+        this.doc
+            .fillColor('#f3f4f6')
+            .rect(rightColumnX - 10, detailsY - 5, 160, 90)
+            .fill();
+
+        this.doc.fontSize(9).fillColor('#4b5563').font('Helvetica');
+
+        let currentY = detailsY;
+
+        // Invoice/Quote Number
+        this.doc
+            .fillColor(this.accentColor)
+            .text(`${this.data.type === 'invoice' ? 'Invoice' : 'Quote'} #:`, rightColumnX, currentY)
+            .fillColor('black')
+            .font('Helvetica-Bold')
+            .text(this.data.invoiceNumber, rightColumnX + 70, currentY, { align: 'right', width: 70 });
+
+        currentY += 15;
+
+        // Job Number
+        this.doc
+            .font('Helvetica')
+            .fillColor(this.accentColor)
+            .text('Job #:', rightColumnX, currentY)
+            .fillColor('black')
+            .font('Helvetica-Bold')
+            .text(`#${this.data.jobNumber}`, rightColumnX + 70, currentY, { align: 'right', width: 70 });
+
+        currentY += 15;
+
+        // Date
+        this.doc
+            .font('Helvetica')
+            .fillColor(this.accentColor)
+            .text('Date:', rightColumnX, currentY)
+            .fillColor('black')
+            .text(this.data.date.toLocaleDateString('en-AU'), rightColumnX + 70, currentY, { align: 'right', width: 70 });
+
+        currentY += 15;
+
+        // Due Date (for invoices)
+        if (this.data.type === 'invoice' && this.data.dueDate) {
+            this.doc
+                .fillColor(this.accentColor)
+                .text('Due Date:', rightColumnX, currentY)
+                .fillColor('black')
+                .text(this.data.dueDate.toLocaleDateString('en-AU'), rightColumnX + 70, currentY, { align: 'right', width: 70 });
+        }
+    }
+
+    addTotalHighlight() {
+        const highlightY = 350;
+        const subtotal = this.calculateSubtotal();
+        const discountAmount = subtotal * (this.data.discount / 100);
         const afterDiscount = subtotal - discountAmount;
-        const gstAmount = afterDiscount * (invoiceData.gst / 100);
+        const gstAmount = afterDiscount * 0.1; // 10% GST for Australia
         const total = afterDiscount + gstAmount;
 
-        const totalsY = 500;
-        const rightAlign = 550;
-
-        // Totals section
+        // Create highlighted box for total
         this.doc
-            .moveTo(350, totalsY - 10)
-            .lineTo(rightAlign, totalsY - 10)
+            .fillColor(this.primaryColor)
+            .rect(this.margin, highlightY, this.pageWidth - 2 * this.margin, 60)
+            .fill();
+
+        this.doc
+            .fontSize(14)
+            .fillColor('white')
+            .font('Helvetica')
+            .text('TOTAL AMOUNT', this.margin + 20, highlightY + 15);
+
+        this.doc
+            .fontSize(28)
+            .font('Helvetica-Bold')
+            .text(
+                `$${total.toFixed(2)}`,
+                this.margin + 20,
+                highlightY + 32,
+                { align: 'right', width: this.pageWidth - 2 * this.margin - 40 }
+            );
+
+        // Add GST label
+        this.doc
+            .fontSize(9)
+            .font('Helvetica')
+            .fillColor('rgba(255, 255, 255, 0.8)')
+            .text('(inc. GST)', this.pageWidth - this.margin - 100, highlightY + 42);
+    }
+
+    addWorksTable() {
+        let tableY = 430;
+
+        // Table header
+        this.doc
+            .fontSize(10)
+            .fillColor('white')
+            .font('Helvetica-Bold');
+
+        // Header background
+        this.doc
+            .fillColor(this.accentColor)
+            .rect(this.margin, tableY, this.pageWidth - 2 * this.margin, 25)
+            .fill();
+
+        tableY += 8;
+
+        // Column headers
+        this.doc
+            .fillColor('white')
+            .text('Description', this.margin + 10, tableY)
+            .text('Qty', this.pageWidth - this.margin - 180, tableY, { width: 40, align: 'center' })
+            .text('Rate', this.pageWidth - this.margin - 130, tableY, { width: 60, align: 'right' })
+            .text('Amount', this.pageWidth - this.margin - 60, tableY, { width: 50, align: 'right' });
+
+        tableY += 25;
+
+        // Table rows
+        this.doc.fontSize(9).font('Helvetica').fillColor('black');
+
+        this.data.works.forEach((work, index) => {
+            const labourCost = work.labourCostOverride ?? (work.labourHours * work.labourRate);
+            const materialCost = work.materialCostOverride ??
+                work.materials.reduce((sum, m) => sum + (m.quantity * m.cost), 0);
+            const workTotal = labourCost + materialCost;
+
+            // Alternate row background
+            if (index % 2 === 0) {
+                this.doc
+                    .fillColor('#f9fafb')
+                    .rect(this.margin, tableY - 5, this.pageWidth - 2 * this.margin, 20)
+                    .fill();
+            }
+
+            // Work title
+            this.doc
+                .fillColor('black')
+                .font('Helvetica-Bold')
+                .text(work.title, this.margin + 10, tableY, { width: 250 });
+
+            // Work amount
+            this.doc
+                .text('', this.pageWidth - this.margin - 180, tableY, { width: 40, align: 'center' })
+                .text('', this.pageWidth - this.margin - 130, tableY, { width: 60, align: 'right' })
+                .text(`$${workTotal.toFixed(2)}`, this.pageWidth - this.margin - 60, tableY, { width: 50, align: 'right' });
+
+            tableY += 18;
+
+            // Work description (if exists)
+            if (work.description) {
+                this.doc
+                    .fontSize(8)
+                    .fillColor('#6b7280')
+                    .font('Helvetica')
+                    .text(work.description, this.margin + 20, tableY, { width: 300 });
+                tableY += 12;
+            }
+
+            // Labour details
+            if (work.labourHours > 0) {
+                this.doc
+                    .fontSize(8)
+                    .fillColor('#6b7280')
+                    .text(`Labour: ${work.labourHours}h @ $${work.labourRate}/h`, this.margin + 20, tableY);
+                tableY += 12;
+            }
+
+            // Materials (if enabled)
+            if (this.data.showMaterials && work.materials.length > 0) {
+                work.materials.forEach(material => {
+                    const matTotal = material.quantity * material.cost;
+                    this.doc
+                        .fontSize(8)
+                        .fillColor('#6b7280')
+                        .text(`• ${material.name}`, this.margin + 20, tableY)
+                        .text(`${material.quantity}`, this.pageWidth - this.margin - 180, tableY, { width: 40, align: 'center' })
+                        .text(`$${material.cost.toFixed(2)}`, this.pageWidth - this.margin - 130, tableY, { width: 60, align: 'right' })
+                        .text(`$${matTotal.toFixed(2)}`, this.pageWidth - this.margin - 60, tableY, { width: 50, align: 'right' });
+                    tableY += 12;
+                });
+            }
+
+            tableY += 8;
+
+            // Check if we need a new page
+            if (tableY > 700) {
+                this.doc.addPage();
+                tableY = 50;
+            }
+        });
+    }
+
+    addTotalsSection() {
+        let totalsY = this.doc.y + 30;
+
+        const subtotal = this.calculateSubtotal();
+        const discountAmount = subtotal * (this.data.discount / 100);
+        const afterDiscount = subtotal - discountAmount;
+        const gstAmount = afterDiscount * 0.1;
+        const total = afterDiscount + gstAmount;
+
+        const rightX = this.pageWidth - this.margin - 150;
+
+        // Divider line
+        this.doc
+            .strokeColor('#e5e7eb')
+            .lineWidth(1)
+            .moveTo(rightX - 20, totalsY)
+            .lineTo(this.pageWidth - this.margin, totalsY)
             .stroke();
 
+        totalsY += 15;
+
+        this.doc.fontSize(10).font('Helvetica').fillColor('#4b5563');
+
+        // Subtotal
         this.doc
-            .fontSize(12)
-            .font('Helvetica')
-            .text('Subtotal:', 400, totalsY, { width: 130, align: 'left' })
-            .text(`$${subtotal.toFixed(2)}`, 470, totalsY, { width: 80, align: 'right' });
+            .text('Subtotal:', rightX, totalsY)
+            .font('Helvetica-Bold')
+            .fillColor('black')
+            .text(`$${subtotal.toFixed(2)}`, rightX + 80, totalsY, { align: 'right', width: 70 });
+
+        totalsY += 18;
 
         // Discount (if applicable)
-        if (invoiceData.discount > 0) {
+        if (this.data.discount > 0) {
             this.doc
-                .text(`Discount (${invoiceData.discount}%):`, 400, totalsY + 20, { width: 130, align: 'left' })
-                .text(`-$${discountAmount.toFixed(2)}`, 470, totalsY + 20, { width: 80, align: 'right' });
+                .font('Helvetica')
+                .fillColor('#4b5563')
+                .text(`Discount (${this.data.discount}%):`, rightX, totalsY)
+                .fillColor('#dc2626')
+                .text(`-$${discountAmount.toFixed(2)}`, rightX + 80, totalsY, { align: 'right', width: 70 });
+
+            totalsY += 18;
         }
 
         // GST
         this.doc
-            .text(`GST (${invoiceData.gst}%):`, 400, totalsY + 40, { width: 130, align: 'left' })
-            .text(`$${gstAmount.toFixed(2)}`, 470, totalsY + 40, { width: 80, align: 'right' });
+            .fillColor('#4b5563')
+            .text('GST (10%):', rightX, totalsY)
+            .fillColor('black')
+            .font('Helvetica-Bold')
+            .text(`$${gstAmount.toFixed(2)}`, rightX + 80, totalsY, { align: 'right', width: 70 });
+
+        totalsY += 25;
 
         // Total line
         this.doc
-            .moveTo(400, totalsY + 55)
-            .lineTo(rightAlign, totalsY + 55)
+            .strokeColor(this.primaryColor)
+            .lineWidth(2)
+            .moveTo(rightX - 20, totalsY)
+            .lineTo(this.pageWidth - this.margin, totalsY)
             .stroke();
+
+        totalsY += 12;
 
         // Final total
         this.doc
             .fontSize(14)
+            .fillColor(this.primaryColor)
             .font('Helvetica-Bold')
-            .text('TOTAL:', 400, totalsY + 65, { width: 130, align: 'left' })
-            .text(`$${total.toFixed(2)}`, 470, totalsY + 65, { width: 80, align: 'right' });
+            .text('TOTAL:', rightX, totalsY)
+            .fontSize(16)
+            .text(`$${total.toFixed(2)}`, rightX + 80, totalsY, { align: 'right', width: 70 });
     }
 
-    addFooter(invoiceData: InvoiceData) {
-        const footerY = 650;
+    addFooter() {
+        const footerY = this.doc.y + 40;
+        let currentY = footerY;
 
-        this.doc
-            .fontSize(10)
-            .font('Helvetica')
-            .text(invoiceData.notes || 'Thank you for your business!', 50, footerY)
-            .text('Payment is due within 30 days of invoice date.', 50, footerY + 15)
-            .text('Please include invoice number on payment.', 50, footerY + 30);
+        // Payment details section
+        if (this.data.type === 'invoice' && this.data.businessSettings.bsb) {
+            this.doc
+                .fontSize(10)
+                .fillColor(this.accentColor)
+                .font('Helvetica-Bold')
+                .text('PAYMENT DETAILS', this.margin, currentY);
+
+            currentY += 15;
+            this.doc.fontSize(9).font('Helvetica').fillColor('#4b5563');
+
+            if (this.data.businessSettings.accountName) {
+                this.doc.text(`Account Name: ${this.data.businessSettings.accountName}`, this.margin, currentY);
+                currentY += 12;
+            }
+
+            if (this.data.businessSettings.bsb) {
+                this.doc.text(`BSB: ${this.data.businessSettings.bsb}`, this.margin, currentY);
+                currentY += 12;
+            }
+
+            if (this.data.businessSettings.accountNumber) {
+                this.doc.text(`Account Number: ${this.data.businessSettings.accountNumber}`, this.margin, currentY);
+                currentY += 12;
+            }
+
+            currentY += 15;
+        }
+
+        // Terms section
+        if (this.data.businessSettings.terms) {
+            this.doc
+                .fontSize(10)
+                .fillColor(this.accentColor)
+                .font('Helvetica-Bold')
+                .text('TERMS & CONDITIONS', this.margin, currentY);
+
+            currentY += 12;
+            this.doc
+                .fontSize(8)
+                .fillColor('#6b7280')
+                .font('Helvetica')
+                .text(this.data.businessSettings.terms, this.margin, currentY, {
+                    width: this.pageWidth - 2 * this.margin,
+                    lineGap: 2
+                });
+
+            currentY = this.doc.y + 15;
+        }
+
+        // Notes section
+        const notes = this.data.notes || this.data.businessSettings.defaultNotes;
+        if (notes) {
+            this.doc
+                .fontSize(10)
+                .fillColor(this.accentColor)
+                .font('Helvetica-Bold')
+                .text('NOTES', this.margin, currentY);
+
+            currentY += 12;
+            this.doc
+                .fontSize(8)
+                .fillColor('#6b7280')
+                .font('Helvetica')
+                .text(notes, this.margin, currentY, {
+                    width: this.pageWidth - 2 * this.margin,
+                    lineGap: 2
+                });
+        }
+    }
+
+    calculateSubtotal(): number {
+        return this.data.works.reduce((sum, work) => {
+            const labourCost = work.labourCostOverride ?? (work.labourHours * work.labourRate);
+            const materialCost = work.materialCostOverride ??
+                work.materials.reduce((matSum, m) => matSum + (m.quantity * m.cost), 0);
+            return sum + labourCost + materialCost;
+        }, 0);
     }
 }
 
-
-export function createInvoice(job: Job, client: Client | null, materials: Material[], filePath: string) {
-    const invoiceData = {
-        invoiceNumber: 'INV-2024-001',
-        date: new Date().toLocaleDateString(),
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        paymentTerms: 'BSB: XXX-XXX, Account Number: 12345678',
-        project: 'Website Development',
-        company: {
-            name: 'Your Company Name',
-            address: '123 Business Street',
-            city: 'Business City',
-            state: 'BC',
-            zip: '12345',
-            phone: '(555) 123-4567',
-            email: 'info@yourcompany.com'
-        },
+export function createInvoice(
+    type: InvoiceType,
+    invoiceNumber: string,
+    jobNumber: number,
+    date: Date,
+    client: Client | null,
+    works: (Work & { materials: Material[] })[],
+    businessSettings: BusinessSettings,
+    filePath: string,
+    options: {
+        showMaterials?: boolean;
+        discount?: number;
+        notes?: string;
+        dueDate?: Date;
+    } = {}
+) {
+    const invoiceData: InvoiceData = {
+        type,
+        invoiceNumber,
+        jobNumber,
+        date,
+        dueDate: options.dueDate,
         client,
-        materials,
-        discount: 10, // 10% discount
-        gst: 10, // 10% GST
-        notes: 'Thank you for choosing our services. We look forward to working with you again!'
+        works,
+        businessSettings,
+        showMaterials: options.showMaterials ?? true,
+        discount: options.discount ?? 0,
+        notes: options.notes,
     };
 
-    const invoiceGenerator = new InvoiceGenerator(invoiceData);
-    console.log(filePath)
-    invoiceGenerator.generateInvoice(filePath);
+    const generator = new ModernInvoiceGenerator(invoiceData);
+    generator.generateInvoice(filePath);
 }

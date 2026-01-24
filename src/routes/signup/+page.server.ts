@@ -3,6 +3,8 @@ import { firstError } from "$lib/utils";
 import { fail, redirect, type Actions } from "@sveltejs/kit";
 import { APIError } from "better-auth";
 import z from "zod";
+import { db } from "$lib/server/db";
+import { businessSettings } from "$lib/server/db/schema";
 
 const signUpSchema = z.object({
     name: z.string().nonempty("Name can't be empty."),
@@ -27,13 +29,37 @@ export const actions: Actions = {
         let result = signUpSchema.safeParse({ name, email, password });
 
         if (result.success) {
+            let userId: string | undefined;
             try {
-                await auth.api.signUpEmail({
+                const response = await auth.api.signUpEmail({
                     body: result.data,
                 });
+                userId = response.user?.id;
             } catch (error) {
                 if (error instanceof APIError) {
                     return fail(400, { message: error.message });
+                }
+            }
+
+            // Create default business settings for new user
+            if (userId) {
+                try {
+                    await db.insert(businessSettings).values({
+                        userId,
+                        businessName: '',
+                        abn: null,
+                        address: null,
+                        phone: null,
+                        email: null,
+                        bsb: null,
+                        accountNumber: null,
+                        accountName: null,
+                        logo: null,
+                        terms: null,
+                        defaultNotes: null
+                    });
+                } catch (error) {
+                    console.error('Failed to create default business settings:', error);
                 }
             }
 

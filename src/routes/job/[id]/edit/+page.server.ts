@@ -53,6 +53,7 @@ export const actions: Actions = {
 		if (form.data.newClientName) {
 			const clientData = {
 				name: form.data.newClientName,
+				email: form.data.newClientEmail,
 				address: form.data.newClientAddress,
 				phone: form.data.newClientPhone
 			};
