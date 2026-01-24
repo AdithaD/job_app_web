@@ -140,6 +140,7 @@
 		<div class="flex flex-col gap-4">
 			<Button class="h-16 font-bold" variant="default" href="/job/new">Add New Job</Button>
 			<Button variant="secondary">Quick Search</Button>
+			<Button variant="outline" href="/templates">Manage Templates</Button>
 		</div>
 	</div>
 </div>
