@@ -34,11 +34,11 @@
 <div class="flex min-h-screen flex-col items-stretch gap-8 p-4 lg:p-8">
 	<Button href="/dashboard" class="w-min" variant="outline">Back</Button>
 	<div class="flex flex-col gap-4">
-		<div class="flex flex-2 justify-between">
-			<div>
-				<div class="flex items-center justify-start gap-4">
-					<h1 class="shrink text-4xl font-bold text-ellipsis">{data.job.title}</h1>
-					<div class="text-2xl">
+		<div class="flex items-start justify-between gap-2">
+			<div class="min-w-0 flex-1">
+				<div class="flex flex-wrap items-center gap-2 sm:gap-4">
+					<h1 class="shrink truncate text-2xl font-bold sm:text-4xl">{data.job.title}</h1>
+					<div class="text-lg whitespace-nowrap sm:text-2xl">
 						#{data.job.jobNumber}
 					</div>
 				</div>
@@ -46,7 +46,7 @@
 			</div>
 			<EditButton href="{data.job.id}/edit"></EditButton>
 		</div>
-		<div class="flex w-full gap-8">
+		<div class="flex w-full flex-col gap-4 lg:flex-row lg:gap-8">
 			<div class="flex-1">
 				<p>{data.job.description}</p>
 			</div>
