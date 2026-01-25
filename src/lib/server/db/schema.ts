@@ -144,10 +144,26 @@ export const attachment = sqliteTable("attachment", {
 	primaryKey({ columns: [table.name, table.noteId] })
 ]);
 
+export const generatedDocument = sqliteTable("generated_document", {
+	id: text("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
+	jobId: text('job_id').references(() => job.id, { onDelete: 'cascade' }).notNull(),
+	type: text('type', { enum: ['quote', 'invoice'] }).notNull(),
+	documentNumber: text('document_number').notNull(),
+	fileName: text('file_name').notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
 export const attachmentRelations = relations(attachment, ({ one }) => ({
 	note: one(note, {
 		fields: [attachment.noteId],
 		references: [note.id],
+	})
+}));
+
+export const generatedDocumentRelations = relations(generatedDocument, ({ one }) => ({
+	job: one(job, {
+		fields: [generatedDocument.jobId],
+		references: [job.id],
 	})
 }));
 
@@ -196,7 +212,8 @@ export const jobRelations = relations(job, ({ one, many }) => ({
 	}),
 	materials: many(material),
 	notes: many(note),
-	works: many(work)
+	works: many(work),
+	documents: many(generatedDocument)
 }))
 
 export const clientRelations = relations(client, ({ many }) => ({
@@ -215,3 +232,4 @@ export type Attachment = typeof attachment.$inferSelect;
 export type WorkTemplate = typeof workTemplate.$inferSelect;
 export type TemplateMaterial = typeof templateMaterial.$inferSelect;
 export type BusinessSettings = typeof businessSettings.$inferSelect;
+export type GeneratedDocument = typeof generatedDocument.$inferSelect;

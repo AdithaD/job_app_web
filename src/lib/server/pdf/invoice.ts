@@ -179,7 +179,7 @@ class ModernInvoiceGenerator {
             .text(`${this.data.type === 'invoice' ? 'Invoice' : 'Quote'} #:`, leftBoxX + 10, currentY)
             .fillColor('black')
             .font('Helvetica-Bold')
-            .text(this.data.invoiceNumber, leftBoxX + 90, currentY, { align: 'right', width: 120 });
+            .text(this.data.invoiceNumber, leftBoxX + 120, currentY, { align: 'right', width: 90 });
 
         currentY += 15;
 
@@ -246,7 +246,7 @@ class ModernInvoiceGenerator {
                 highlightY + 35
             );
 
-        // Add GST label (positioned properly to avoid overlap)
+        // Add GST label (positioned properly below the total)
         this.doc
             .fontSize(9)
             .font('Helvetica')
@@ -435,7 +435,7 @@ class ModernInvoiceGenerator {
         let currentY = footerY;
 
         // Payment details section - PROMINENT BOX (shown for both quotes and invoices)
-        if (this.data.businessSettings.bsb) {
+        if (this.data.businessSettings.bsb && this.data.type == 'invoice') {
             const boxWidth = 350;
             const boxHeight = 85;
 

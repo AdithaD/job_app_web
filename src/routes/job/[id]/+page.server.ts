@@ -1,8 +1,8 @@
 import { error, fail, redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
 import { db } from "$lib/server/db";
-import { businessSettings, job } from "$lib/server/db/schema";
-import { and, eq } from "drizzle-orm";
+import { businessSettings, generatedDocument, job } from "$lib/server/db/schema";
+import { and, desc, eq } from "drizzle-orm";
 import { getJobStaticFileServePath, getJobStaticFileWritePath } from "$lib/utils";
 import { mkdirSync } from "fs";
 import { createInvoice } from "$lib/server/pdf/invoice";
@@ -48,10 +48,29 @@ export const load: PageServerLoad = async (event) => {
         where: eq(businessSettings.userId, event.locals.user.id)
     });
 
+    // Fetch latest quote and invoice
+    const latestQuote = await db.query.generatedDocument.findFirst({
+        where: and(
+            eq(generatedDocument.jobId, event.params.id),
+            eq(generatedDocument.type, 'quote')
+        ),
+        orderBy: desc(generatedDocument.createdAt)
+    });
+
+    const latestInvoice = await db.query.generatedDocument.findFirst({
+        where: and(
+            eq(generatedDocument.jobId, event.params.id),
+            eq(generatedDocument.type, 'invoice')
+        ),
+        orderBy: desc(generatedDocument.createdAt)
+    });
+
     return {
         job: result,
         attachmentPath: dirPath,
-        businessSettings: settings
+        businessSettings: settings,
+        latestQuote,
+        latestInvoice
     };
 };
 
@@ -126,6 +145,15 @@ export const actions: Actions = {
             }
         );
 
+        // Store document record in database
+        await db.insert(generatedDocument).values({
+            jobId: event.params.id,
+            type: 'quote',
+            documentNumber: quoteNumber,
+            fileName: fileName,
+            createdAt: new Date()
+        });
+
         return redirect(303, `${getJobStaticFileServePath(event.locals.user.id, event.params.id)}${fileName}`)
     },
 
@@ -199,6 +227,15 @@ export const actions: Actions = {
                 dueDate
             }
         );
+
+        // Store document record in database
+        await db.insert(generatedDocument).values({
+            jobId: event.params.id,
+            type: 'invoice',
+            documentNumber: invoiceNumber,
+            fileName: fileName,
+            createdAt: new Date()
+        });
 
         return redirect(303, `${getJobStaticFileServePath(event.locals.user.id, event.params.id)}${fileName}`)
     }
