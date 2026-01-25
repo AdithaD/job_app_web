@@ -10,6 +10,7 @@ import { z } from "zod";
 
 const quoteInvoiceSchema = z.object({
     showMaterials: z.coerce.boolean().default(true),
+    showLabour: z.coerce.boolean().default(true),
     discount: z.coerce.number().min(0).max(100).default(0),
     notes: z.string().optional(),
     dueDays: z.coerce.number().int().min(0).default(30)
@@ -63,6 +64,7 @@ export const actions: Actions = {
         const formData = await event.request.formData();
         const data = {
             showMaterials: formData.get('showMaterials'),
+            showLabour: formData.get('showLabour'),
             discount: formData.get('discount'),
             notes: formData.get('notes'),
             dueDays: formData.get('dueDays')
@@ -73,7 +75,7 @@ export const actions: Actions = {
             return fail(400, { error: 'Invalid form data' });
         }
 
-        const { showMaterials, discount, notes } = result.data;
+        const { showMaterials, showLabour, discount, notes } = result.data;
 
         const jobData = await db.query.job.findFirst({
             where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
@@ -118,6 +120,7 @@ export const actions: Actions = {
             fullPath,
             {
                 showMaterials,
+                showLabour,
                 discount,
                 notes: notes || undefined
             }

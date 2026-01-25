@@ -24,6 +24,7 @@
 	let quoteDialogOpen = $state(false);
 	let invoiceDialogOpen = $state(false);
 	let showMaterials = $state(true);
+	let showLabour = $state(true);
 	let discount = $state(0);
 	let notes = $state('');
 	let dueDays = $state(30);
@@ -195,6 +196,12 @@
 					</Label>
 				</div>
 
+				<div class="flex items-center space-x-2">
+					<Checkbox id="showLabour" name="showLabour" value="true" bind:checked={showLabour} />
+					<Label for="showLabour" class="cursor-pointer font-normal">
+						Show labour breakdown in quote
+					</Label>
+				</div>
 				<div class="space-y-2">
 					<Label for="discount">Discount (%)</Label>
 					<Input

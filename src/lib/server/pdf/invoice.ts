@@ -14,6 +14,7 @@ export type InvoiceData = {
     works: (Work & { materials: Material[] })[];
     businessSettings: BusinessSettings;
     showMaterials: boolean;
+    showLabour: boolean;
     discount: number;
     notes?: string;
 }
@@ -159,25 +160,26 @@ class ModernInvoiceGenerator {
 
     addInvoiceDetails() {
         const detailsY = 240;
-        const rightColumnX = this.pageWidth - this.margin - 150;
+        const boxWidth = 220;
+        const leftBoxX = this.margin;
 
-        // Create details box
+        // Create gray details box on the LEFT
         this.doc
             .fillColor('#f3f4f6')
-            .rect(rightColumnX - 10, detailsY - 5, 160, 90)
+            .rect(leftBoxX, detailsY, boxWidth, 90)
             .fill();
 
         this.doc.fontSize(9).fillColor('#4b5563').font('Helvetica');
 
-        let currentY = detailsY;
+        let currentY = detailsY + 10;
 
         // Invoice/Quote Number
         this.doc
             .fillColor(this.accentColor)
-            .text(`${this.data.type === 'invoice' ? 'Invoice' : 'Quote'} #:`, rightColumnX, currentY)
+            .text(`${this.data.type === 'invoice' ? 'Invoice' : 'Quote'} #:`, leftBoxX + 10, currentY)
             .fillColor('black')
             .font('Helvetica-Bold')
-            .text(this.data.invoiceNumber, rightColumnX + 70, currentY, { align: 'right', width: 70 });
+            .text(this.data.invoiceNumber, leftBoxX + 90, currentY, { align: 'right', width: 120 });
 
         currentY += 15;
 
@@ -185,10 +187,10 @@ class ModernInvoiceGenerator {
         this.doc
             .font('Helvetica')
             .fillColor(this.accentColor)
-            .text('Job #:', rightColumnX, currentY)
+            .text('Job #:', leftBoxX + 10, currentY)
             .fillColor('black')
             .font('Helvetica-Bold')
-            .text(`#${this.data.jobNumber}`, rightColumnX + 70, currentY, { align: 'right', width: 70 });
+            .text(`#${this.data.jobNumber}`, leftBoxX + 120, currentY, { align: 'right', width: 90 });
 
         currentY += 15;
 
@@ -196,9 +198,9 @@ class ModernInvoiceGenerator {
         this.doc
             .font('Helvetica')
             .fillColor(this.accentColor)
-            .text('Date:', rightColumnX, currentY)
+            .text('Date:', leftBoxX + 10, currentY)
             .fillColor('black')
-            .text(this.data.date.toLocaleDateString('en-AU'), rightColumnX + 70, currentY, { align: 'right', width: 70 });
+            .text(this.data.date.toLocaleDateString('en-AU'), leftBoxX + 120, currentY, { align: 'right', width: 90 });
 
         currentY += 15;
 
@@ -206,52 +208,54 @@ class ModernInvoiceGenerator {
         if (this.data.type === 'invoice' && this.data.dueDate) {
             this.doc
                 .fillColor(this.accentColor)
-                .text('Due Date:', rightColumnX, currentY)
+                .text('Due Date:', leftBoxX + 10, currentY)
                 .fillColor('black')
-                .text(this.data.dueDate.toLocaleDateString('en-AU'), rightColumnX + 70, currentY, { align: 'right', width: 70 });
+                .text(this.data.dueDate.toLocaleDateString('en-AU'), leftBoxX + 120, currentY, { align: 'right', width: 90 });
         }
     }
 
     addTotalHighlight() {
-        const highlightY = 350;
+        const highlightY = 240;
+        const boxWidth = 240;
+        const rightBoxX = this.pageWidth - this.margin - boxWidth;
+
         const subtotal = this.calculateSubtotal();
         const discountAmount = subtotal * (this.data.discount / 100);
         const afterDiscount = subtotal - discountAmount;
         const gstAmount = afterDiscount * 0.1; // 10% GST for Australia
         const total = afterDiscount + gstAmount;
 
-        // Create highlighted box for total
+        // Create blue highlighted box for total on the RIGHT
         this.doc
             .fillColor(this.primaryColor)
-            .rect(this.margin, highlightY, this.pageWidth - 2 * this.margin, 60)
+            .rect(rightBoxX, highlightY, boxWidth, 90)
             .fill();
 
         this.doc
-            .fontSize(14)
+            .fontSize(12)
             .fillColor('white')
             .font('Helvetica')
-            .text('TOTAL AMOUNT', this.margin + 20, highlightY + 15);
+            .text('TOTAL AMOUNT', rightBoxX + 15, highlightY + 15);
 
         this.doc
-            .fontSize(28)
+            .fontSize(32)
             .font('Helvetica-Bold')
             .text(
                 `$${total.toFixed(2)}`,
-                this.margin + 20,
-                highlightY + 32,
-                { align: 'right', width: this.pageWidth - 2 * this.margin - 40 }
+                rightBoxX + 15,
+                highlightY + 35
             );
 
-        // Add GST label
+        // Add GST label (positioned properly to avoid overlap)
         this.doc
             .fontSize(9)
             .font('Helvetica')
-            .fillColor('rgba(255, 255, 255, 0.8)')
-            .text('(inc. GST)', this.pageWidth - this.margin - 100, highlightY + 42);
+            .fillColor('white')
+            .text('(inc. GST)', rightBoxX + 15, highlightY + 70);
     }
 
     addWorksTable() {
-        let tableY = 430;
+        let tableY = 350;
 
         // Table header
         this.doc
@@ -319,7 +323,7 @@ class ModernInvoiceGenerator {
             }
 
             // Labour details
-            if (work.labourHours > 0) {
+            if (work.labourHours > 0 && this.data.showLabour) {
                 this.doc
                     .fontSize(8)
                     .fillColor('#6b7280')
@@ -430,33 +434,57 @@ class ModernInvoiceGenerator {
         const footerY = this.doc.y + 40;
         let currentY = footerY;
 
-        // Payment details section
-        if (this.data.type === 'invoice' && this.data.businessSettings.bsb) {
-            this.doc
-                .fontSize(10)
-                .fillColor(this.accentColor)
-                .font('Helvetica-Bold')
-                .text('PAYMENT DETAILS', this.margin, currentY);
+        // Payment details section - PROMINENT BOX (shown for both quotes and invoices)
+        if (this.data.businessSettings.bsb) {
+            const boxWidth = 350;
+            const boxHeight = 85;
 
-            currentY += 15;
-            this.doc.fontSize(9).font('Helvetica').fillColor('#4b5563');
+            // Draw prominent box with blue border and light background
+            this.doc
+                .strokeColor(this.primaryColor)
+                .lineWidth(2)
+                .fillColor('#eff6ff')
+                .rect(this.margin, currentY, boxWidth, boxHeight)
+                .fillAndStroke();
+
+            currentY += 12;
+
+            this.doc
+                .fontSize(11)
+                .fillColor(this.primaryColor)
+                .font('Helvetica-Bold')
+                .text('PAYMENT DETAILS', this.margin + 15, currentY);
+
+            currentY += 18;
+            this.doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af');
 
             if (this.data.businessSettings.accountName) {
-                this.doc.text(`Account Name: ${this.data.businessSettings.accountName}`, this.margin, currentY);
-                currentY += 12;
+                this.doc.text(`Account Name: `, this.margin + 15, currentY, { continued: true })
+                    .font('Helvetica')
+                    .fillColor('black')
+                    .text(this.data.businessSettings.accountName);
+                currentY += 14;
             }
 
             if (this.data.businessSettings.bsb) {
-                this.doc.text(`BSB: ${this.data.businessSettings.bsb}`, this.margin, currentY);
-                currentY += 12;
+                this.doc.font('Helvetica-Bold').fillColor('#1e40af')
+                    .text(`BSB: `, this.margin + 15, currentY, { continued: true })
+                    .font('Helvetica')
+                    .fillColor('black')
+                    .text(this.data.businessSettings.bsb);
+                currentY += 14;
             }
 
             if (this.data.businessSettings.accountNumber) {
-                this.doc.text(`Account Number: ${this.data.businessSettings.accountNumber}`, this.margin, currentY);
-                currentY += 12;
+                this.doc.font('Helvetica-Bold').fillColor('#1e40af')
+                    .text(`Account Number: `, this.margin + 15, currentY, { continued: true })
+                    .font('Helvetica')
+                    .fillColor('black')
+                    .text(this.data.businessSettings.accountNumber);
+                currentY += 14;
             }
 
-            currentY += 15;
+            currentY += 20;
         }
 
         // Terms section
@@ -522,6 +550,7 @@ export function createInvoice(
     filePath: string,
     options: {
         showMaterials?: boolean;
+        showLabour?: boolean;
         discount?: number;
         notes?: string;
         dueDate?: Date;
@@ -537,6 +566,7 @@ export function createInvoice(
         works,
         businessSettings,
         showMaterials: options.showMaterials ?? true,
+        showLabour: options.showLabour ?? true,
         discount: options.discount ?? 0,
         notes: options.notes,
     };
