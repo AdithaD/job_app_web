@@ -1,4 +1,4 @@
-import { db } from '$lib/server/db';
+
 import { job, work, workTemplate } from '$lib/server/db/schema';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
@@ -14,7 +14,7 @@ export const load: PageServerLoad = async (event) => {
 		return redirect(303, '/signin');
 	}
 
-	const jobQuery = await db.query.job.findFirst({
+	const jobQuery = await event.locals.db.query.job.findFirst({
 		where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
 		columns: {
 			id: true
@@ -26,7 +26,7 @@ export const load: PageServerLoad = async (event) => {
 	}
 
 	// Load user's work templates
-	const templates = await db.query.workTemplate.findMany({
+	const templates = await event.locals.db.query.workTemplate.findMany({
 		where: eq(workTemplate.userId, event.locals.user.id),
 		with: {
 			materials: true
@@ -78,7 +78,7 @@ export const actions: Actions = {
 
 		try {
 			const insertedWork = (
-				await db
+				await event.locals.db
 					.insert(work)
 					.values({ ...form.data, jobId })
 					.returning()
@@ -89,7 +89,7 @@ export const actions: Actions = {
 			materials.forEach((m) => (m.workId = insertedWork.id));
 
 			if (materials.length > 0) {
-				await db.insert(material).values(materials);
+				await event.locals.db.insert(material).values(materials);
 			}
 			// add to db
 		} catch (err) {

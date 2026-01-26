@@ -42,10 +42,10 @@
 		}
 	}
 
-	const templateOptions = data.templates.map((t) => ({
+	const templateOptions = $derived(data.templates.map((t) => ({
 		value: t.id,
 		label: t.title + (t.description ? ` - ${t.description.substring(0, 30)}...` : '')
-	}));
+	})));
 
 	const triggerContent = $derived(
 		templateOptions.find((t) => t.value === selectedTemplateId)?.label ?? 'Select a template...'

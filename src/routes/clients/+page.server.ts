@@ -1,4 +1,3 @@
-import { db } from '$lib/server/db';
 import { client } from '$lib/server/db/schema';
 import { redirect } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
@@ -10,7 +9,7 @@ export const load: PageServerLoad = async (event) => {
     }
 
     // Load user's clients with job count
-    const clients = await db.query.client.findMany({
+    const clients = await event.locals.db.query.client.findMany({
         where: eq(client.userId, event.locals.user.id),
         with: {
             jobs: {

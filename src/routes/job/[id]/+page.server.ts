@@ -1,6 +1,5 @@
 import { error, fail, redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
-import { db } from "$lib/server/db";
 import { businessSettings, generatedDocument, job } from "$lib/server/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { getJobStaticFileServePath, getJobStaticFileWritePath } from "$lib/utils";
@@ -21,7 +20,7 @@ export const load: PageServerLoad = async (event) => {
         return redirect(303, "/signin")
     }
 
-    const result = await db.query.job.findFirst({
+    const result = await event.locals.db.query.job.findFirst({
         where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
         with: {
             client: true,
@@ -44,12 +43,12 @@ export const load: PageServerLoad = async (event) => {
     }
 
     // Load business settings
-    const settings = await db.query.businessSettings.findFirst({
+    const settings = await event.locals.db.query.businessSettings.findFirst({
         where: eq(businessSettings.userId, event.locals.user.id)
     });
 
     // Fetch latest quote and invoice
-    const latestQuote = await db.query.generatedDocument.findFirst({
+    const latestQuote = await event.locals.db.query.generatedDocument.findFirst({
         where: and(
             eq(generatedDocument.jobId, event.params.id),
             eq(generatedDocument.type, 'quote')
@@ -57,7 +56,7 @@ export const load: PageServerLoad = async (event) => {
         orderBy: desc(generatedDocument.createdAt)
     });
 
-    const latestInvoice = await db.query.generatedDocument.findFirst({
+    const latestInvoice = await event.locals.db.query.generatedDocument.findFirst({
         where: and(
             eq(generatedDocument.jobId, event.params.id),
             eq(generatedDocument.type, 'invoice')
@@ -96,7 +95,7 @@ export const actions: Actions = {
 
         const { showMaterials, showLabour, discount, notes } = result.data;
 
-        const jobData = await db.query.job.findFirst({
+        const jobData = await event.locals.db.query.job.findFirst({
             where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
             with: {
                 client: true,
@@ -112,7 +111,7 @@ export const actions: Actions = {
             error(404, "Not found.");
         }
 
-        const settings = await db.query.businessSettings.findFirst({
+        const settings = await event.locals.db.query.businessSettings.findFirst({
             where: eq(businessSettings.userId, event.locals.user.id)
         });
 
@@ -146,7 +145,7 @@ export const actions: Actions = {
         );
 
         // Store document record in database
-        await db.insert(generatedDocument).values({
+        await event.locals.db.insert(generatedDocument).values({
             jobId: event.params.id,
             type: 'quote',
             documentNumber: quoteNumber,
@@ -177,7 +176,7 @@ export const actions: Actions = {
 
         const { showMaterials, discount, notes, dueDays } = result.data;
 
-        const jobData = await db.query.job.findFirst({
+        const jobData = await event.locals.db.query.job.findFirst({
             where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
             with: {
                 client: true,
@@ -193,7 +192,7 @@ export const actions: Actions = {
             error(404, "Not found.");
         }
 
-        const settings = await db.query.businessSettings.findFirst({
+        const settings = await event.locals.db.query.businessSettings.findFirst({
             where: eq(businessSettings.userId, event.locals.user.id)
         });
 
@@ -229,7 +228,7 @@ export const actions: Actions = {
         );
 
         // Store document record in database
-        await db.insert(generatedDocument).values({
+        await event.locals.db.insert(generatedDocument).values({
             jobId: event.params.id,
             type: 'invoice',
             documentNumber: invoiceNumber,

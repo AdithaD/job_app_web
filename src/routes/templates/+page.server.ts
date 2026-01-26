@@ -1,4 +1,4 @@
-import { db } from '$lib/server/db';
+
 import { workTemplate, templateMaterial } from '$lib/server/db/schema';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
@@ -10,7 +10,7 @@ export const load: PageServerLoad = async (event) => {
     }
 
     // Load user's work templates
-    const templates = await db.query.workTemplate.findMany({
+    const templates = await event.locals.db.query.workTemplate.findMany({
         where: eq(workTemplate.userId, event.locals.user.id),
         with: {
             materials: true
@@ -37,7 +37,7 @@ export const actions: Actions = {
         }
 
         // Verify the template belongs to the user
-        const template = await db.query.workTemplate.findFirst({
+        const template = await event.locals.db.query.workTemplate.findFirst({
             where: eq(workTemplate.id, templateId)
         });
 
@@ -51,7 +51,7 @@ export const actions: Actions = {
 
         try {
             // Delete the template (materials will be cascade deleted)
-            await db.delete(workTemplate).where(eq(workTemplate.id, templateId));
+            await event.locals.db.delete(workTemplate).where(eq(workTemplate.id, templateId));
             return { success: true };
         } catch (err) {
             console.error(err);

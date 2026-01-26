@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { FieldGroup, Field, FieldLabel, FieldDescription } from '$lib/components/ui/field';
@@ -14,11 +15,11 @@
 			<Card.Description>Enter your email below to login to your account</Card.Description>
 		</Card.Header>
 		<Card.Content>
-			<form method="POST">
+			<form method="POST" use:enhance>
 				<FieldGroup>
 					<Field>
 						<FieldLabel for="email-{id}">Email</FieldLabel>
-						<Input id="email-{id}" type="email" placeholder="m@example.com" required />
+						<Input id="email-{id}" type="email" placeholder="m@example.com" name="email" required />
 					</Field>
 					<Field>
 						<div class="flex items-center">
@@ -27,7 +28,7 @@
 								Forgot your password?
 							</a> -->
 						</div>
-						<Input id="password-{id}" type="password" required />
+						<Input id="password-{id}" type="password" name="password" required />
 					</Field>
 					<Field>
 						<Button type="submit" class="w-full">Login</Button>

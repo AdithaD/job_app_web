@@ -1,4 +1,4 @@
-import { db } from '$lib/server/db';
+
 import { client, job } from '$lib/server/db/schema';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { and, eq, max } from 'drizzle-orm';
@@ -11,7 +11,7 @@ export const load: PageServerLoad = async (event) => {
 	if (!event.locals.session || !event.locals.user) {
 		return redirect(303, '/signin');
 	}
-	const clients = await db.query.client.findMany({
+	const clients = await event.locals.db.query.client.findMany({
 		where: and(eq(client.userId, event.locals.user.id))
 	});
 	return {
@@ -27,7 +27,7 @@ export const actions: Actions = {
 		const form = await superValidate(event.request, zod4(editJobFormSchema));
 		if (!form.valid) return fail(400, { form });
 
-		const jobNumberQuery = await db
+		const jobNumberQuery = await event.locals.db
 			.select({ jobNumber: max(job.jobNumber) })
 			.from(job)
 			.where(eq(job.userId, event.locals.user.id));
@@ -43,7 +43,7 @@ export const actions: Actions = {
 				phone: form.data.newClientPhone
 			};
 			try {
-				const newClient = await db
+				const newClient = await event.locals.db
 					.insert(client)
 					.values({ userId: event.locals.user.id, ...clientData })
 					.returning();
@@ -54,7 +54,7 @@ export const actions: Actions = {
 			}
 		}
 		try {
-			insertedRow = await db
+			insertedRow = await event.locals.db
 				.insert(job)
 				.values({ userId: event.locals.user.id, jobNumber, ...form.data, clientId })
 				.returning({ id: job.id });

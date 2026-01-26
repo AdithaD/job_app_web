@@ -1,17 +1,19 @@
-import { dev } from '$app/environment';
-import { drizzle } from 'drizzle-orm/libsql';
+import { drizzle as drizzleLibSql } from 'drizzle-orm/libsql';
+import { drizzle as drizzleD1 } from 'drizzle-orm/d1';
 import { createClient } from '@libsql/client';
-import { env } from '$env/dynamic/private';
 import * as schema from './schema';
-import { main } from './seed';
 
-if (!env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
-if (!dev && !env.DATABASE_AUTH_TOKEN) throw new Error('DATABASE_AUTH_TOKEN is not set');
+export function getDb(db?: D1Database, databaseUrl?: string) {
+	if (db) {
+		return drizzleD1(db, { schema })
+	}
 
-const dbClient = createClient({
-	url: env.DATABASE_URL,
-	authToken: env.DATABASE_AUTH_TOKEN
-});
+	if (databaseUrl) {
+		const client = createClient({ url: databaseUrl })
+		return drizzleLibSql(client, { schema })
+	}
 
+	throw new Error("No database configuration found.")
+}
 
-export const db = drizzle(dbClient, { schema });
+export type DrizzleClient = ReturnType<typeof getDb>

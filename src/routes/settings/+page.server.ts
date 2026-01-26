@@ -1,6 +1,6 @@
 import { fail, redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
-import { db } from "$lib/server/db";
+
 import { businessSettings } from "$lib/server/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -25,7 +25,7 @@ export const load: PageServerLoad = async (event) => {
         return redirect(303, "/signin");
     }
 
-    const settings = await db.query.businessSettings.findFirst({
+    const settings = await event.locals.db.query.businessSettings.findFirst({
         where: eq(businessSettings.userId, event.locals.user.id)
     });
 
@@ -75,7 +75,7 @@ export const actions: Actions = {
             defaultNotes: form.data.defaultNotes || null,
         };
 
-        await db
+        await event.locals.db
             .update(businessSettings)
             .set(updateData)
             .where(eq(businessSettings.userId, event.locals.user.id));

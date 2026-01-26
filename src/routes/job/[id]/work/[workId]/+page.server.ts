@@ -1,4 +1,4 @@
-import { db } from '$lib/server/db';
+
 import { job, material, work, type Work, workTemplate, templateMaterial } from '$lib/server/db/schema';
 import { error, redirect, fail } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
@@ -13,13 +13,13 @@ export const load: PageServerLoad = async (event) => {
 		return redirect(303, '/signin');
 	}
 
-	const jobQuery = await db.query.job.findFirst({
+	const jobQuery = await event.locals.db.query.job.findFirst({
 		where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
 		columns: {
 			id: true
 		}
 	});
-	const workQuery = await db.query.work.findFirst({
+	const workQuery = await event.locals.db.query.work.findFirst({
 		where: and(eq(work.jobId, event.params.id), eq(work.id, event.params.workId)),
 		with: {
 			materials: true
@@ -54,7 +54,7 @@ export const actions: Actions = {
 			throw redirect(303, '/signin');
 		}
 
-		const ownedJob = await db
+		const ownedJob = await event.locals.db
 			.select({ id: job.id })
 			.from(job)
 			.where(and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)))
@@ -64,7 +64,7 @@ export const actions: Actions = {
 			throw error(403, 'Forbidden');
 		}
 
-		await db.delete(work).where(and(eq(work.id, event.params.workId), eq(work.jobId, ownedJob.id)));
+		await event.locals.db.delete(work).where(and(eq(work.id, event.params.workId), eq(work.jobId, ownedJob.id)));
 
 		throw redirect(303, `/job/${event.params.id}`);
 	},
@@ -86,7 +86,7 @@ export const actions: Actions = {
 
 		try {
 			const insertedWork = (
-				await db
+				await event.locals.db
 					.update(work)
 					.set({ ...form.data })
 					.where(and(eq(work.jobId, jobId), eq(work.id, event.params.workId)))
@@ -97,10 +97,10 @@ export const actions: Actions = {
 			const materials = getMaterialsFromFormData(formData);
 			materials.forEach((m) => (m.workId = insertedWork.id));
 
-			await db.delete(material).where(eq(material.workId, insertedWork.id));
+			await event.locals.db.delete(material).where(eq(material.workId, insertedWork.id));
 
 			if (materials.length > 0) {
-				await db.insert(material).values(materials);
+				await event.locals.db.insert(material).values(materials);
 			}
 			// add to db
 		} catch (err) {
@@ -115,7 +115,7 @@ export const actions: Actions = {
 			return redirect(303, '/signin');
 		}
 
-		const ownedJob = await db
+		const ownedJob = await event.locals.db
 			.select({ id: job.id })
 			.from(job)
 			.where(and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)))
@@ -126,7 +126,7 @@ export const actions: Actions = {
 		}
 
 		// Get the work with materials
-		const workQuery = await db.query.work.findFirst({
+		const workQuery = await event.locals.db.query.work.findFirst({
 			where: and(eq(work.jobId, event.params.id), eq(work.id, event.params.workId)),
 			with: {
 				materials: true
@@ -140,7 +140,7 @@ export const actions: Actions = {
 		try {
 			// Create the template
 			const insertedTemplate = (
-				await db
+				await event.locals.db
 					.insert(workTemplate)
 					.values({
 						userId: event.locals.user.id,
@@ -161,7 +161,7 @@ export const actions: Actions = {
 					cost: m.cost,
 					quantity: m.quantity
 				}));
-				await db.insert(templateMaterial).values(templateMaterials);
+				await event.locals.db.insert(templateMaterial).values(templateMaterials);
 			}
 
 			return { success: true, message: 'Template saved successfully!' };

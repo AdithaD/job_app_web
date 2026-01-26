@@ -1,9 +1,7 @@
-import { auth } from "$lib/server/auth";
 import { firstError } from "$lib/utils";
 import { fail, redirect, type Actions } from "@sveltejs/kit";
 import { APIError } from "better-auth";
 import z from "zod";
-import { db } from "$lib/server/db";
 import { businessSettings } from "$lib/server/db/schema";
 
 const signUpSchema = z.object({
@@ -27,11 +25,12 @@ export const actions: Actions = {
         const email = formData.get('email');
 
         let result = signUpSchema.safeParse({ name, email, password });
+        console.log(result.data);
 
         if (result.success) {
             let userId: string | undefined;
             try {
-                const response = await auth.api.signUpEmail({
+                const response = await event.locals.auth.api.signUpEmail({
                     body: result.data,
                 });
                 userId = response.user?.id;
@@ -39,12 +38,13 @@ export const actions: Actions = {
                 if (error instanceof APIError) {
                     return fail(400, { message: error.message });
                 }
+                throw error
             }
 
             // Create default business settings for new user
             if (userId) {
                 try {
-                    await db.insert(businessSettings).values({
+                    await event.locals.db.insert(businessSettings).values({
                         userId,
                         businessName: '',
                         abn: null,

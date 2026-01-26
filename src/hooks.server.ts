@@ -1,11 +1,17 @@
 import type { Handle } from '@sveltejs/kit';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { building } from '$app/environment';
-import { auth } from '$lib/server/auth';
+import { getDb } from './lib/server/db';
+import { getAuth } from '$lib/server/auth';
 
-const handleAuth: Handle = async ({ event, resolve }) => {
+const handler: Handle = async ({ event, resolve }) => {
 
-	const session = await auth.api.getSession({
+	event.locals.db = getDb(event.platform?.env.job_app_db, event.platform?.env.DATABASE_URL);
+
+
+	event.locals.auth = getAuth(event.locals.db);
+
+	const session = await event.locals.auth.api.getSession({
 		headers: event.request.headers,
 	});
 
@@ -14,7 +20,7 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 		event.locals.user = session.user;
 	}
 
-	return svelteKitHandler({ event, resolve, auth, building });
+	return svelteKitHandler({ event, resolve, auth: event.locals.auth, building });
 };
 
-export const handle: Handle = handleAuth;
+export const handle: Handle = handler;

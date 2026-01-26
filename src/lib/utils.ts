@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import z, { ZodError } from 'zod';
+import z from 'zod';
+import type { ZodError } from 'better-auth';
 import type { JobStatus, PaymentStatus } from './schema';
 import type { Material } from './server/db/schema';
 
@@ -42,10 +43,10 @@ export function paymentStatusToString(status: PaymentStatus) {
 }
 export type NullToUndefined<T> = {
 	[K in keyof T]: T[K] extends null
-		? undefined
-		: T[K] extends (infer U)[]
-			? NullToUndefined<U>[]
-			: Exclude<T[K], null> | ([null] extends [T[K]] ? undefined : never);
+	? undefined
+	: T[K] extends (infer U)[]
+	? NullToUndefined<U>[]
+	: Exclude<T[K], null> | ([null] extends [T[K]] ? undefined : never);
 };
 
 export function getJobStaticFileWritePath(userId: string, jobId: string) {

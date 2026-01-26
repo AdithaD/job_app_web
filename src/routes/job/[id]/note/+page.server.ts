@@ -1,4 +1,3 @@
-import { db } from "$lib/server/db";
 import { attachment, job, note } from "$lib/server/db/schema";
 import { error, redirect } from "@sveltejs/kit";
 import { and, eq, inArray } from "drizzle-orm";
@@ -15,7 +14,7 @@ export const load: PageServerLoad = async (event) => {
         return redirect(303, "/signin")
     }
 
-    const jobQuery = await db.query.job.findFirst({
+    const jobQuery = await event.locals.db.query.job.findFirst({
         where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
         columns: {
             id: true,
@@ -51,9 +50,9 @@ export const actions: Actions = {
 
         try {
             let noteId = z.string().parse(formData.get('id'));
-            let userJobs = db.select({ id: job.id }).from(job).where(eq(job.userId, event.locals.user.id));
+            let userJobs = event.locals.db.select({ id: job.id }).from(job).where(eq(job.userId, event.locals.user.id));
 
-            let result = await db
+            let result = await event.locals.db
                 .delete(note).where(
                     and(
                         eq(note.id, noteId),
@@ -62,10 +61,8 @@ export const actions: Actions = {
                     )
                 );
 
-            if (result.rowsAffected > 0) {
-                const dirPath = getJobStaticFileWritePath(event.locals.user.id, event.params.id);
-                rmSync(`${dirPath}${noteId}/`, { recursive: true });
-            }
+            const dirPath = getJobStaticFileWritePath(event.locals.user.id, event.params.id);
+            rmSync(`${dirPath}${noteId}/`, { recursive: true });
 
         } catch (e) {
             console.log(e)
@@ -82,7 +79,7 @@ export const actions: Actions = {
         const jobId = event.params.id;
 
         try {
-            let row = await db.insert(note).values({ ...form.data, jobId, createdAt: new Date(), updatedAt: new Date() }).returning();
+            let row = await event.locals.db.insert(note).values({ ...form.data, jobId, createdAt: new Date(), updatedAt: new Date() }).returning();
 
             // upload attachment if it exists
             if (form.data.file) {
@@ -94,7 +91,7 @@ export const actions: Actions = {
                 mkdirSync(path, { recursive: true });
                 writeFileSync(`${path}${fileName}`, Buffer.from(bytes));
 
-                await db.insert(attachment).values({ name: fileName, noteId: row[0].id, size: form.data.file.size })
+                await event.locals.db.insert(attachment).values({ name: fileName, noteId: row[0].id, size: form.data.file.size })
                 console.log('inserted attachment')
             }
 

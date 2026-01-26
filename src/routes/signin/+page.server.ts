@@ -1,7 +1,6 @@
 import { fail, redirect, type Actions } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import z from "zod";
-import { auth } from "$lib/server/auth";
 import { APIError } from "better-auth";
 import { firstError } from "$lib/utils";
 
@@ -27,18 +26,20 @@ export const actions: Actions = {
 
         if (result.success) {
             try {
-                await auth.api.signInEmail({
+                await event.locals.auth.api.signInEmail({
                     body: result.data,
 
                 });
             } catch (error) {
                 if (error instanceof APIError) {
+                    console.log(error)
                     return fail(400, { message: error.message });
                 }
             }
 
             redirect(303, "/dashboard")
         } else {
+            console.log(result.error)
             return fail(400, { message: firstError(result.error) });
         }
     }
