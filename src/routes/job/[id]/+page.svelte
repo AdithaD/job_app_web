@@ -146,7 +146,7 @@
 					<div class="flex flex-col gap-2">
 						{#if data.latestQuote}
 							<Button
-								href="{data.attachmentPath}{data.latestQuote.fileName}"
+								href="{data.attachmentPath}/{data.latestQuote.fileName}"
 								variant="outline"
 								class="w-full justify-between"
 								target="_blank"
@@ -175,7 +175,7 @@
 						{/if}
 						{#if data.latestInvoice}
 							<Button
-								href="{data.attachmentPath}{data.latestInvoice.fileName}"
+								href="{data.attachmentPath}/{data.latestInvoice.fileName}"
 								variant="outline"
 								class="w-full justify-between"
 								target="_blank"

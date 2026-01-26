@@ -1,6 +1,5 @@
-import PDFDocument from "pdfkit";
+import PDFDocument from "pdfkit/js/pdfkit.standalone";
 import type { Client, Work, Material, BusinessSettings } from "../db/schema";
-import { createWriteStream } from "fs";
 
 export type InvoiceType = 'quote' | 'invoice';
 
@@ -35,9 +34,7 @@ class ModernInvoiceGenerator {
         this.data = data;
     }
 
-    generateInvoice(filePath: string) {
-        this.doc.pipe(createWriteStream(filePath));
-
+    generateInvoice() {
         this.addHeader();
         this.addBusinessAndClientInfo();
         this.addInvoiceDetails();
@@ -45,7 +42,6 @@ class ModernInvoiceGenerator {
         this.addWorksTable();
         this.addTotalsSection();
         this.addFooter();
-
         this.doc.end();
     }
 
@@ -547,14 +543,14 @@ export function createInvoice(
     client: Client | null,
     works: (Work & { materials: Material[] })[],
     businessSettings: BusinessSettings,
-    filePath: string,
     options: {
         showMaterials?: boolean;
         showLabour?: boolean;
         discount?: number;
         notes?: string;
         dueDate?: Date;
-    } = {}
+    } = {},
+    hooks: (doc: PDFKit.PDFDocument) => void
 ) {
     const invoiceData: InvoiceData = {
         type,
@@ -572,5 +568,6 @@ export function createInvoice(
     };
 
     const generator = new ModernInvoiceGenerator(invoiceData);
-    generator.generateInvoice(filePath);
+    hooks(generator.doc)
+    generator.generateInvoice();
 }

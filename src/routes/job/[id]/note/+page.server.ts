@@ -1,4 +1,4 @@
-import { attachment, job, note } from "$lib/server/db/schema";
+import { attachment, job, note, uploadedDocument } from "$lib/server/db/schema";
 import { error, redirect } from "@sveltejs/kit";
 import { and, eq, inArray } from "drizzle-orm";
 import { fail, superValidate } from "sveltekit-superforms";
@@ -6,8 +6,8 @@ import { zod4 } from "sveltekit-superforms/adapters";
 import { addNoteFormSchema } from "../../validation";
 import type { Actions, PageServerLoad } from "./$types";
 import z from "zod";
-import { mkdirSync, rmSync, writeFileSync } from "fs";
-import { getJobStaticFileServePath, getJobStaticFileWritePath } from "$lib/utils";
+import { getJobStaticFileServePath } from "$lib/utils";
+import { randomUUID } from "crypto";
 
 export const load: PageServerLoad = async (event) => {
     if (!event.locals.session || !event.locals.user) {
@@ -23,7 +23,11 @@ export const load: PageServerLoad = async (event) => {
         with: {
             notes: {
                 with: {
-                    attachments: true,
+                    attachments: {
+                        with: {
+                            uploadedDocument: true,
+                        }
+                    },
                 }
             },
         }
@@ -60,10 +64,6 @@ export const actions: Actions = {
                         inArray(note.jobId, userJobs)
                     )
                 );
-
-            const dirPath = getJobStaticFileWritePath(event.locals.user.id, event.params.id);
-            rmSync(`${dirPath}${noteId}/`, { recursive: true });
-
         } catch (e) {
             console.log(e)
             return error(400, { message: "Bad request" })
@@ -81,18 +81,20 @@ export const actions: Actions = {
         try {
             let row = await event.locals.db.insert(note).values({ ...form.data, jobId, createdAt: new Date(), updatedAt: new Date() }).returning();
 
+            let noteId = row[0].id;
+
             // upload attachment if it exists
             if (form.data.file) {
                 const bytes = await form.data.file.arrayBuffer();
 
-                const fileName = form.data.file.name;
-                const path = `${getJobStaticFileWritePath(event.locals.user.id, jobId)}${row[0].id}/`;
+                const fileName = `${new Date().getTime()}-${form.data.file.name}`;
+                const objectKey = `${event.locals.user.id}/${event.params.id}/${fileName}`;
 
-                mkdirSync(path, { recursive: true });
-                writeFileSync(`${path}${fileName}`, Buffer.from(bytes));
+                const id = randomUUID();
 
-                await event.locals.db.insert(attachment).values({ name: fileName, noteId: row[0].id, size: form.data.file.size })
-                console.log('inserted attachment')
+                await event.platform?.env.job_app_storage.put(objectKey, bytes);
+                await event.locals.db.insert(uploadedDocument).values({ id, jobId, objectKey, fileName, fileType: form.data.file.type, type: 'attachment', createdAt: new Date() })
+                await event.locals.db.insert(attachment).values({ noteId, uploadedDocumentId: id })
             }
 
         } catch (err) {

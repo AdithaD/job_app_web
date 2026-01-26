@@ -135,37 +135,20 @@ export const note = sqliteTable("note", {
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 })
+export const attachment = sqliteTable("attachments", {
+	noteId: text("note_id").references(() => note.id, { onDelete: 'cascade' }).notNull(),
+	uploadedDocumentId: text("uploaded_document_id").references(() => uploadedDocument.id, { onDelete: 'cascade' }).notNull(),
+})
 
-export const attachment = sqliteTable("attachment", {
-	name: text('name').notNull(),
-	noteId: text('note_id').references(() => note.id, { onDelete: 'cascade' }).notNull(),
-	size: integer('size').notNull(),
-}, (table) => [
-	primaryKey({ columns: [table.name, table.noteId] })
-]);
-
-export const generatedDocument = sqliteTable("generated_document", {
+export const uploadedDocument = sqliteTable("generated_document", {
 	id: text("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
 	jobId: text('job_id').references(() => job.id, { onDelete: 'cascade' }).notNull(),
-	type: text('type', { enum: ['quote', 'invoice'] }).notNull(),
-	documentNumber: text('document_number').notNull(),
+	type: text('type', { enum: ['quote', 'invoice', 'attachment'] }).notNull(),
+	objectKey: text('object_key').notNull(),
 	fileName: text('file_name').notNull(),
+	fileType: text('file_type').notNull(),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
-
-export const attachmentRelations = relations(attachment, ({ one }) => ({
-	note: one(note, {
-		fields: [attachment.noteId],
-		references: [note.id],
-	})
-}));
-
-export const generatedDocumentRelations = relations(generatedDocument, ({ one }) => ({
-	job: one(job, {
-		fields: [generatedDocument.jobId],
-		references: [job.id],
-	})
-}));
 
 export const workRelations = relations(work, ({ one, many }) => ({
 	job: one(job, {
@@ -202,7 +185,17 @@ export const noteRelations = relations(note, ({ one, many }) => ({
 		fields: [note.jobId],
 		references: [job.id],
 	}),
-	attachments: many(attachment)
+	attachments: many(attachment),
+}))
+export const attachmentRelations = relations(attachment, ({ one, many }) => ({
+	note: one(note, {
+		fields: [attachment.noteId],
+		references: [note.id],
+	}),
+	uploadedDocument: one(uploadedDocument, {
+		fields: [attachment.uploadedDocumentId],
+		references: [uploadedDocument.id],
+	}),
 }))
 
 export const jobRelations = relations(job, ({ one, many }) => ({
@@ -213,7 +206,7 @@ export const jobRelations = relations(job, ({ one, many }) => ({
 	materials: many(material),
 	notes: many(note),
 	works: many(work),
-	documents: many(generatedDocument)
+	documents: many(uploadedDocument)
 }))
 
 export const clientRelations = relations(client, ({ many }) => ({
@@ -228,8 +221,8 @@ export type Client = typeof client.$inferSelect;
 export type Material = typeof material.$inferSelect;
 export type Work = typeof work.$inferSelect;
 export type Note = typeof note.$inferSelect;
-export type Attachment = typeof attachment.$inferSelect;
 export type WorkTemplate = typeof workTemplate.$inferSelect;
 export type TemplateMaterial = typeof templateMaterial.$inferSelect;
 export type BusinessSettings = typeof businessSettings.$inferSelect;
-export type GeneratedDocument = typeof generatedDocument.$inferSelect;
+export type UploadedDocument = typeof uploadedDocument.$inferSelect;
+export type Attachment = typeof attachment.$inferSelect;

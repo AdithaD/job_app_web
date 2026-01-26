@@ -1,11 +1,13 @@
 import { error, fail, redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
-import { businessSettings, generatedDocument, job } from "$lib/server/db/schema";
+import { businessSettings, uploadedDocument, job } from "$lib/server/db/schema";
 import { and, desc, eq } from "drizzle-orm";
-import { getJobStaticFileServePath, getJobStaticFileWritePath } from "$lib/utils";
+import { getJobStaticFileServePath } from "$lib/utils";
 import { mkdirSync } from "fs";
 import { createInvoice } from "$lib/server/pdf/invoice";
 import { z } from "zod";
+import { randomUUID } from "crypto";
+import type { DrizzleClient } from "$lib/server/db";
 
 const quoteInvoiceSchema = z.object({
     showMaterials: z.coerce.boolean().default(true),
@@ -48,20 +50,20 @@ export const load: PageServerLoad = async (event) => {
     });
 
     // Fetch latest quote and invoice
-    const latestQuote = await event.locals.db.query.generatedDocument.findFirst({
+    const latestQuote = await event.locals.db.query.uploadedDocument.findFirst({
         where: and(
-            eq(generatedDocument.jobId, event.params.id),
-            eq(generatedDocument.type, 'quote')
+            eq(uploadedDocument.jobId, event.params.id),
+            eq(uploadedDocument.type, 'quote')
         ),
-        orderBy: desc(generatedDocument.createdAt)
+        orderBy: desc(uploadedDocument.createdAt)
     });
 
-    const latestInvoice = await event.locals.db.query.generatedDocument.findFirst({
+    const latestInvoice = await event.locals.db.query.uploadedDocument.findFirst({
         where: and(
-            eq(generatedDocument.jobId, event.params.id),
-            eq(generatedDocument.type, 'invoice')
+            eq(uploadedDocument.jobId, event.params.id),
+            eq(uploadedDocument.type, 'invoice')
         ),
-        orderBy: desc(generatedDocument.createdAt)
+        orderBy: desc(uploadedDocument.createdAt)
     });
 
     return {
@@ -119,41 +121,55 @@ export const actions: Actions = {
             return fail(400, { error: 'Please configure business settings first' });
         }
 
-        const dirPath = getJobStaticFileWritePath(event.locals.user.id, event.params.id);
         const fileName = `Quote_${jobData.jobNumber}_${new Date().toISOString().replace(/[:.]/g, "_")}.pdf`
-        const fullPath = `${dirPath}${fileName}`
-
-        mkdirSync(dirPath, { recursive: true });
-
         const quoteNumber = `Q-${jobData.jobNumber}-${Date.now()}`;
 
-        createInvoice(
-            'quote',
-            quoteNumber,
-            jobData.jobNumber,
-            new Date(),
-            jobData.client,
-            jobData.works,
-            settings,
-            fullPath,
-            {
-                showMaterials,
-                showLabour,
-                discount,
-                notes: notes || undefined
-            }
-        );
+        console.log('generating pdf')
 
-        // Store document record in database
-        await event.locals.db.insert(generatedDocument).values({
-            jobId: event.params.id,
-            type: 'quote',
-            documentNumber: quoteNumber,
-            fileName: fileName,
-            createdAt: new Date()
-        });
+        try {
+            const filePath = `${event.locals.user.id}/${event.params.id}`
+            const buffers: Buffer[] = [];
+            await new Promise<void>((resolve, reject) => {
+                createInvoice(
+                    'quote',
+                    quoteNumber,
+                    jobData.jobNumber,
+                    new Date(),
+                    jobData.client,
+                    jobData.works,
+                    settings,
+                    {
+                        showMaterials,
+                        discount,
+                        notes: notes || undefined,
+                    },
+                    (doc) => {
+                        doc.on("data", buffers.push.bind(buffers))
+                        doc.on("end", async () => {
+                            const pdf = Buffer.concat(buffers);
+                            const object = await event.platform?.env.job_app_storage.put(`${filePath}/${fileName}`, pdf);
 
-        return redirect(303, `${getJobStaticFileServePath(event.locals.user.id, event.params.id)}${fileName}`)
+                            if (!object) {
+                                reject()
+                            } else {
+                                await event.locals.db.insert(uploadedDocument).values({
+                                    jobId: event.params.id,
+                                    type: 'quote',
+                                    objectKey: object.key,
+                                    fileName,
+                                    fileType: 'application/pdf',
+                                    createdAt: new Date()
+                                });
+                                resolve()
+                            }
+                        })
+                    }
+                );
+            })
+        } catch (error) {
+            console.log(error)
+        }
+
     },
 
     invoice: async (event) => {
@@ -200,42 +216,51 @@ export const actions: Actions = {
             return fail(400, { error: 'Please configure business settings first' });
         }
 
-        const dirPath = getJobStaticFileWritePath(event.locals.user.id, event.params.id);
         const fileName = `Invoice_${jobData.jobNumber}_${new Date().toISOString().replace(/[:.]/g, "_")}.pdf`
-        const fullPath = `${dirPath}${fileName}`
-
-        mkdirSync(dirPath, { recursive: true });
+        const filePath = `${event.locals.user.id}/${event.params.id}`
 
         const invoiceNumber = `INV-${jobData.jobNumber}-${Date.now()}`;
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + dueDays);
 
-        createInvoice(
-            'invoice',
-            invoiceNumber,
-            jobData.jobNumber,
-            new Date(),
-            jobData.client,
-            jobData.works,
-            settings,
-            fullPath,
-            {
-                showMaterials,
-                discount,
-                notes: notes || undefined,
-                dueDate
-            }
-        );
+        const buffers: Buffer[] = [];
+        await new Promise<void>((resolve, reject) => {
+            createInvoice(
+                'invoice',
+                invoiceNumber,
+                jobData.jobNumber,
+                new Date(),
+                jobData.client,
+                jobData.works,
+                settings,
+                {
+                    showMaterials,
+                    discount,
+                    notes: notes || undefined,
+                    dueDate
+                },
+                (doc) => {
+                    doc.on("data", buffers.push.bind(buffers))
+                    doc.on("end", async () => {
+                        const pdf = Buffer.concat(buffers);
+                        const object = await event.platform?.env.job_app_storage.put(`${filePath}/${fileName}`, pdf);
 
-        // Store document record in database
-        await event.locals.db.insert(generatedDocument).values({
-            jobId: event.params.id,
-            type: 'invoice',
-            documentNumber: invoiceNumber,
-            fileName: fileName,
-            createdAt: new Date()
-        });
-
-        return redirect(303, `${getJobStaticFileServePath(event.locals.user.id, event.params.id)}${fileName}`)
+                        if (!object) {
+                            reject()
+                        } else {
+                            await event.locals.db.insert(uploadedDocument).values({
+                                jobId: event.params.id,
+                                type: 'invoice',
+                                objectKey: object.key,
+                                fileName,
+                                fileType: 'application/pdf',
+                                createdAt: new Date()
+                            });
+                            resolve()
+                        }
+                    })
+                }
+            );
+        })
     }
 };

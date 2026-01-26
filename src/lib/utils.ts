@@ -49,11 +49,8 @@ export type NullToUndefined<T> = {
 	: Exclude<T[K], null> | ([null] extends [T[K]] ? undefined : never);
 };
 
-export function getJobStaticFileWritePath(userId: string, jobId: string) {
-	return `static/userdata/${userId}/${jobId}/`;
-}
 export function getJobStaticFileServePath(userId: string, jobId: string) {
-	return `/userdata/${userId}/${jobId}/`;
+	return `/job/${jobId}/files`;
 }
 /**
  * Convert FormData with keys like:

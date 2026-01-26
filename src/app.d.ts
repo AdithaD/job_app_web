@@ -14,6 +14,7 @@ declare global {
 		}
 		interface Locals {
 			db: DrizzleClient,
+			storage: S3Client,
 			auth: BetterAuth,
 			user: User | null,
 			session: Session | null,

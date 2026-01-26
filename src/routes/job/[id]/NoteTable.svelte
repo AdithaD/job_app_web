@@ -3,7 +3,7 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 
 	import * as Table from '$lib/components/ui/table/index.js';
-	import type { Attachment, Note } from '$lib/server/db/schema';
+	import type { Attachment, Note, UploadedDocument } from '$lib/server/db/schema';
 	import { format } from 'date-fns';
 
 	let {
@@ -11,7 +11,7 @@
 		editMode = false,
 		attachmentPath
 	}: {
-		notes: (Note & { attachments: Attachment[] })[];
+		notes: (Note & { attachments: (Attachment & { uploadedDocument : UploadedDocument })[] })[];
 		editMode: boolean;
 		attachmentPath: string;
 	} = $props();
@@ -72,9 +72,9 @@
 											<Dialog.Footer>
 												{#each note.attachments as att}
 													<Button
-														href={`${attachmentPath}/${note.id}/${att.name}`}
+														href={`${attachmentPath}/${att.uploadedDocument.fileName}`}
 														download
-														variant="link">Open {att.name}</Button
+														variant="link">Open {att.uploadedDocument.fileName}</Button
 													>
 												{/each}
 											</Dialog.Footer>

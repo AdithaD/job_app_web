@@ -44,6 +44,12 @@
 			"migrations_dir": "./src/lib/server/db/migrations"
 		}
 	],
+	"r2_buckets": [
+		{
+			"bucket_name": "job-app-storage",
+			"binding": "job_app_storage"
+		}
+	],
 	/**
 	 * Service Bindings (communicate between multiple Workers)
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
