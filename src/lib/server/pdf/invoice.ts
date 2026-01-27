@@ -14,6 +14,7 @@ export type InvoiceData = {
     businessSettings: BusinessSettings;
     showMaterials: boolean;
     showLabour: boolean;
+    showPaymentDetails: boolean;
     discount: number;
     notes?: string;
 }
@@ -320,13 +321,9 @@ class ModernInvoiceGenerator {
                 this.doc
                     .fontSize(8)
                     .fillColor('#6b7280')
-                    .font('Helvetica');
-
-                // Calculate the actual height of the description text
-                const descriptionHeight = this.doc.heightOfString(work.description, { width: 300 });
-
-                this.doc.text(work.description, this.margin + 20, tableY, { width: 300 });
-                tableY += descriptionHeight + 8;
+                    .font('Helvetica')
+                    .text(work.description, this.margin + 20, tableY, { width: 300 });
+                tableY += 12;
             }
 
             // Labour details
@@ -441,8 +438,8 @@ class ModernInvoiceGenerator {
         const footerY = this.doc.y + 40;
         let currentY = footerY;
 
-        // Payment details section - PROMINENT BOX (shown for both quotes and invoices)
-        if (this.data.businessSettings.bsb && this.data.type == 'invoice') {
+        // Payment details section - PROMINENT BOX (shown only if enabled)
+        if (this.data.showPaymentDetails && this.data.businessSettings.bsb) {
             const boxWidth = 350;
             const boxHeight = 85;
 
@@ -497,22 +494,6 @@ class ModernInvoiceGenerator {
         // Terms & Conditions section (use custom terms or default from business settings)
         const termsToDisplay = this.data.notes || this.data.businessSettings.terms;
         if (termsToDisplay) {
-            // Calculate if we have enough space for header + some content
-            this.doc.fontSize(8).fillColor('#6b7280').font('Helvetica');
-            const termsHeight = this.doc.heightOfString(termsToDisplay, {
-                width: this.pageWidth - 2 * this.margin,
-                lineGap: 2
-            });
-
-            const headerHeight = 22; // Approximate height for "TERMS & CONDITIONS" header
-            const minContentHeight = 30; // Minimum content to show with header
-
-            // If not enough space, start on a new page
-            if (currentY + headerHeight + minContentHeight > 750) {
-                this.doc.addPage();
-                currentY = 50;
-            }
-
             this.doc
                 .fontSize(10)
                 .fillColor(this.accentColor)
@@ -552,6 +533,7 @@ export function createInvoice(
     options: {
         showMaterials?: boolean;
         showLabour?: boolean;
+        showPaymentDetails?: boolean;
         discount?: number;
         terms?: string;
         dueDate?: Date;
@@ -569,6 +551,7 @@ export function createInvoice(
         businessSettings,
         showMaterials: options.showMaterials ?? true,
         showLabour: options.showLabour ?? true,
+        showPaymentDetails: options.showPaymentDetails ?? true,
         discount: options.discount ?? 0,
         notes: options.terms,
     };

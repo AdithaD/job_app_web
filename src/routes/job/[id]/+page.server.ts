@@ -13,6 +13,7 @@ const quoteInvoiceSchema = z.object({
     documentId: z.string().min(1, 'Document ID is required'),
     showMaterials: z.coerce.boolean().default(false),
     showLabour: z.coerce.boolean().default(false),
+    showPaymentDetails: z.coerce.boolean().default(false),
     discount: z.coerce.number().min(0).max(100).default(0),
     terms: z.string().optional(),
     dueDays: z.coerce.number().int().min(0).default(30)
@@ -87,6 +88,7 @@ export const actions: Actions = {
             documentId: formData.get('documentId'),
             showMaterials: formData.get('showMaterials'),
             showLabour: formData.get('showLabour'),
+            showPaymentDetails: formData.get('showPaymentDetails'),
             discount: formData.get('discount'),
             terms: formData.get('terms'),
             dueDays: formData.get('dueDays')
@@ -97,7 +99,7 @@ export const actions: Actions = {
             return fail(400, { error: 'Invalid form data' });
         }
 
-        const { documentId, showMaterials, showLabour, discount, terms } = result.data;
+        const { documentId, showMaterials, showLabour, showPaymentDetails, discount, terms } = result.data;
 
         const jobData = await event.locals.db.query.job.findFirst({
             where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
@@ -143,6 +145,7 @@ export const actions: Actions = {
                     {
                         showMaterials,
                         showLabour,
+                        showPaymentDetails,
                         discount,
                         terms: terms || undefined,
                     },
@@ -185,6 +188,7 @@ export const actions: Actions = {
             documentId: formData.get('documentId'),
             showMaterials: formData.get('showMaterials'),
             showLabour: formData.get('showLabour'),
+            showPaymentDetails: formData.get('showPaymentDetails'),
             discount: formData.get('discount'),
             terms: formData.get('terms'),
             dueDays: formData.get('dueDays')
@@ -195,7 +199,7 @@ export const actions: Actions = {
             return fail(400, { error: 'Invalid form data' });
         }
 
-        const { documentId, showMaterials, discount, terms, dueDays } = result.data;
+        const { documentId, showMaterials, showPaymentDetails, discount, terms, dueDays } = result.data;
 
         const jobData = await event.locals.db.query.job.findFirst({
             where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
@@ -240,6 +244,7 @@ export const actions: Actions = {
                 settings,
                 {
                     showMaterials,
+                    showPaymentDetails,
                     discount,
                     terms: terms || undefined,
                     dueDate

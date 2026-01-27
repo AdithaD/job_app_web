@@ -27,6 +27,7 @@
 	let documentId = $state('');
 	let showMaterials = $state(true);
 	let showLabour = $state(true);
+	let showPaymentDetails = $state(true);
 	let discount = $state(0);
 	let terms = $state('');
 	let dueDays = $state(30);
@@ -349,6 +350,20 @@
 						bind:value={discount}
 						placeholder="0"
 					/>
+				</div>
+
+				<!-- Show Payment Details -->
+				<div class="flex items-center space-x-2">
+					<Checkbox
+						id="showPaymentDetails"
+						name="showPaymentDetails"
+						value="true"
+						checked={showPaymentDetails}
+						onCheckedChange={(checked) => showPaymentDetails = checked === true}
+					/>
+					<Label for="showPaymentDetails" class="cursor-pointer font-normal">
+						Show payment details
+					</Label>
 				</div>
 
 				<!-- Due Days (Invoice only) -->
