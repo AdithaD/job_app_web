@@ -35,7 +35,10 @@
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
 	 */
-	"vars": {},
+	"vars": {
+		"BETTER_AUTH_URL": "https://job-app-web.adithaidoratiyawa.workers.dev",
+		"DATABASE_URL": ""
+	},
 	"d1_databases": [
 		{
 			"binding": "job_app_db",
