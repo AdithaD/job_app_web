@@ -17,7 +17,6 @@ const businessSettingsSchema = z.object({
     accountNumber: z.string().optional().default(''),
     accountName: z.string().optional().default(''),
     terms: z.string().optional().default(''),
-    defaultNotes: z.string().optional().default(''),
 });
 
 export const load: PageServerLoad = async (event) => {
@@ -72,7 +71,6 @@ export const actions: Actions = {
             accountNumber: form.data.accountNumber || null,
             accountName: form.data.accountName || null,
             terms: form.data.terms || null,
-            defaultNotes: form.data.defaultNotes || null,
         };
 
         await event.locals.db

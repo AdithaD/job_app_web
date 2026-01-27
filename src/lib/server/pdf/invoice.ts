@@ -48,12 +48,19 @@ class ModernInvoiceGenerator {
     addHeader() {
         const headerY = 50;
 
+        let headerText = "";
+        if (this.data.type == 'quote') {
+            headerText = "QUOTE"
+        } else if (this.data.type == 'invoice') {
+            headerText = "TAX INVOICE"
+        }
+
         // Document type (QUOTE or INVOICE) - large and bold
         this.doc
             .fontSize(32)
             .fillColor(this.primaryColor)
             .font('Helvetica-Bold')
-            .text(this.data.type.toUpperCase(), this.margin, headerY);
+            .text(headerText.toUpperCase(), this.margin, headerY);
 
         // Logo space (top right) - if logo exists
         if (this.data.businessSettings.logo) {
@@ -313,9 +320,13 @@ class ModernInvoiceGenerator {
                 this.doc
                     .fontSize(8)
                     .fillColor('#6b7280')
-                    .font('Helvetica')
-                    .text(work.description, this.margin + 20, tableY, { width: 300 });
-                tableY += 12;
+                    .font('Helvetica');
+
+                // Calculate the actual height of the description text
+                const descriptionHeight = this.doc.heightOfString(work.description, { width: 300 });
+
+                this.doc.text(work.description, this.margin + 20, tableY, { width: 300 });
+                tableY += descriptionHeight + 8;
             }
 
             // Labour details
@@ -483,8 +494,25 @@ class ModernInvoiceGenerator {
             currentY += 20;
         }
 
-        // Terms section
-        if (this.data.businessSettings.terms) {
+        // Terms & Conditions section (use custom terms or default from business settings)
+        const termsToDisplay = this.data.notes || this.data.businessSettings.terms;
+        if (termsToDisplay) {
+            // Calculate if we have enough space for header + some content
+            this.doc.fontSize(8).fillColor('#6b7280').font('Helvetica');
+            const termsHeight = this.doc.heightOfString(termsToDisplay, {
+                width: this.pageWidth - 2 * this.margin,
+                lineGap: 2
+            });
+
+            const headerHeight = 22; // Approximate height for "TERMS & CONDITIONS" header
+            const minContentHeight = 30; // Minimum content to show with header
+
+            // If not enough space, start on a new page
+            if (currentY + headerHeight + minContentHeight > 750) {
+                this.doc.addPage();
+                currentY = 50;
+            }
+
             this.doc
                 .fontSize(10)
                 .fillColor(this.accentColor)
@@ -496,29 +524,7 @@ class ModernInvoiceGenerator {
                 .fontSize(8)
                 .fillColor('#6b7280')
                 .font('Helvetica')
-                .text(this.data.businessSettings.terms, this.margin, currentY, {
-                    width: this.pageWidth - 2 * this.margin,
-                    lineGap: 2
-                });
-
-            currentY = this.doc.y + 15;
-        }
-
-        // Notes section
-        const notes = this.data.notes || this.data.businessSettings.defaultNotes;
-        if (notes) {
-            this.doc
-                .fontSize(10)
-                .fillColor(this.accentColor)
-                .font('Helvetica-Bold')
-                .text('NOTES', this.margin, currentY);
-
-            currentY += 12;
-            this.doc
-                .fontSize(8)
-                .fillColor('#6b7280')
-                .font('Helvetica')
-                .text(notes, this.margin, currentY, {
+                .text(termsToDisplay, this.margin, currentY, {
                     width: this.pageWidth - 2 * this.margin,
                     lineGap: 2
                 });
@@ -547,7 +553,7 @@ export function createInvoice(
         showMaterials?: boolean;
         showLabour?: boolean;
         discount?: number;
-        notes?: string;
+        terms?: string;
         dueDate?: Date;
     } = {},
     hooks: (doc: PDFKit.PDFDocument) => void
@@ -564,7 +570,7 @@ export function createInvoice(
         showMaterials: options.showMaterials ?? true,
         showLabour: options.showLabour ?? true,
         discount: options.discount ?? 0,
-        notes: options.notes,
+        notes: options.terms,
     };
 
     const generator = new ModernInvoiceGenerator(invoiceData);

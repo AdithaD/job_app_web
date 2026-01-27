@@ -20,7 +20,6 @@
 		accountNumber: z.string().optional().default(''),
 		accountName: z.string().optional().default(''),
 		terms: z.string().optional().default(''),
-		defaultNotes: z.string().optional().default('')
 	});
 
 	const form = superForm(data.form, {
@@ -172,29 +171,6 @@
 									bind:value={$formData.terms}
 									placeholder="Enter your business terms and conditions here...&#10;&#10;For example:&#10;- Payment is due within 30 days of invoice date&#10;- Late payments may incur interest charges&#10;- All work is guaranteed for 12 months"
 									rows={6}
-								/>
-							{/snippet}
-						</Form.Control>
-						<Form.FieldErrors />
-					</Form.Field>
-				</Card.Content>
-			</Card.Root>
-
-			<!-- Default Notes -->
-			<Card.Root class="lg:col-span-2">
-				<Card.Header>
-					<Card.Title>Default Notes</Card.Title>
-					<Card.Description>Default notes to appear on all quotes and invoices</Card.Description>
-				</Card.Header>
-				<Card.Content class="space-y-4">
-					<Form.Field {form} name="defaultNotes">
-						<Form.Control>
-							{#snippet children({ props })}
-								<Textarea
-									{...props}
-									bind:value={$formData.defaultNotes}
-									placeholder="Enter default notes here...&#10;&#10;For example:&#10;Thank you for choosing our services. We look forward to working with you again!"
-									rows={4}
 								/>
 							{/snippet}
 						</Form.Control>

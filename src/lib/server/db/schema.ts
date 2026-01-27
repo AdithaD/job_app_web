@@ -86,7 +86,6 @@ export const businessSettings = sqliteTable("business_settings", {
 	accountName: text('account_name'),
 	logo: text('logo'),
 	terms: text('terms'),
-	defaultNotes: text('default_notes'),
 });
 
 export const work = sqliteTable("work", {

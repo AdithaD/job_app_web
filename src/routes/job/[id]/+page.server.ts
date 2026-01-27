@@ -10,10 +10,11 @@ import { randomUUID } from "crypto";
 import type { DrizzleClient } from "$lib/server/db";
 
 const quoteInvoiceSchema = z.object({
-    showMaterials: z.coerce.boolean().default(true),
-    showLabour: z.coerce.boolean().default(true),
+    documentId: z.string().min(1, 'Document ID is required'),
+    showMaterials: z.coerce.boolean().default(false),
+    showLabour: z.coerce.boolean().default(false),
     discount: z.coerce.number().min(0).max(100).default(0),
-    notes: z.string().optional(),
+    terms: z.string().optional(),
     dueDays: z.coerce.number().int().min(0).default(30)
 });
 
@@ -83,10 +84,11 @@ export const actions: Actions = {
 
         const formData = await event.request.formData();
         const data = {
+            documentId: formData.get('documentId'),
             showMaterials: formData.get('showMaterials'),
             showLabour: formData.get('showLabour'),
             discount: formData.get('discount'),
-            notes: formData.get('notes'),
+            terms: formData.get('terms'),
             dueDays: formData.get('dueDays')
         };
 
@@ -95,7 +97,7 @@ export const actions: Actions = {
             return fail(400, { error: 'Invalid form data' });
         }
 
-        const { showMaterials, showLabour, discount, notes } = result.data;
+        const { documentId, showMaterials, showLabour, discount, terms } = result.data;
 
         const jobData = await event.locals.db.query.job.findFirst({
             where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
@@ -122,7 +124,7 @@ export const actions: Actions = {
         }
 
         const fileName = `Quote_${jobData.jobNumber}_${new Date().toISOString().replace(/[:.]/g, "_")}.pdf`
-        const quoteNumber = `Q-${jobData.jobNumber}-${Date.now()}`;
+        const quoteNumber = `Q-${jobData.jobNumber}-${documentId}`;
 
         console.log('generating pdf')
 
@@ -140,8 +142,9 @@ export const actions: Actions = {
                     settings,
                     {
                         showMaterials,
+                        showLabour,
                         discount,
-                        notes: notes || undefined,
+                        terms: terms || undefined,
                     },
                     (doc) => {
                         doc.on("data", buffers.push.bind(buffers))
@@ -179,9 +182,11 @@ export const actions: Actions = {
 
         const formData = await event.request.formData();
         const data = {
+            documentId: formData.get('documentId'),
             showMaterials: formData.get('showMaterials'),
+            showLabour: formData.get('showLabour'),
             discount: formData.get('discount'),
-            notes: formData.get('notes'),
+            terms: formData.get('terms'),
             dueDays: formData.get('dueDays')
         };
 
@@ -190,7 +195,7 @@ export const actions: Actions = {
             return fail(400, { error: 'Invalid form data' });
         }
 
-        const { showMaterials, discount, notes, dueDays } = result.data;
+        const { documentId, showMaterials, discount, terms, dueDays } = result.data;
 
         const jobData = await event.locals.db.query.job.findFirst({
             where: and(eq(job.id, event.params.id), eq(job.userId, event.locals.user.id)),
@@ -219,7 +224,7 @@ export const actions: Actions = {
         const fileName = `Invoice_${jobData.jobNumber}_${new Date().toISOString().replace(/[:.]/g, "_")}.pdf`
         const filePath = `${event.locals.user.id}/${event.params.id}`
 
-        const invoiceNumber = `INV-${jobData.jobNumber}-${Date.now()}`;
+        const invoiceNumber = `INV-${jobData.jobNumber}-${documentId}`;
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + dueDays);
 
@@ -236,7 +241,7 @@ export const actions: Actions = {
                 {
                     showMaterials,
                     discount,
-                    notes: notes || undefined,
+                    terms: terms || undefined,
                     dueDate
                 },
                 (doc) => {

@@ -9,6 +9,7 @@
 	import DateWithIcon from '$lib/components/ui/DateWithIcon.svelte';
 	import * as Item from '$lib/components/ui/item';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Select from '$lib/components/ui/select';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Input } from '$lib/components/ui/input';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -21,14 +22,22 @@
 
 	let { data } = $props();
 
-	let quoteDialogOpen = $state(false);
-	let invoiceDialogOpen = $state(false);
+	let documentDialogOpen = $state(false);
+	let documentType = $state<'quote' | 'invoice'>('quote');
+	let documentId = $state('');
 	let showMaterials = $state(true);
 	let showLabour = $state(true);
 	let discount = $state(0);
-	let notes = $state('');
+	let terms = $state('');
 	let dueDays = $state(30);
 	let isGenerating = $state(false);
+
+	// Update terms when business settings change or dialog opens
+	$effect(() => {
+		if (documentDialogOpen && data.businessSettings?.terms) {
+			terms = data.businessSettings.terms;
+		}
+	});
 </script>
 
 <div class="flex min-h-screen flex-col items-stretch gap-8 p-4 lg:p-8">
@@ -208,10 +217,24 @@
 
 			<div class="grow"></div>
 			<div class="flex gap-2">
-				<Button class="grow" variant="secondary" onclick={() => (quoteDialogOpen = true)}
-					>Generate Quote</Button
+				<Button 
+					class="grow" 
+					variant="secondary" 
+					onclick={() => {
+						documentType = 'quote';
+						documentDialogOpen = true;
+					}}
 				>
-				<Button class="grow" variant="secondary" onclick={() => (invoiceDialogOpen = true)}>
+					Generate Quote
+				</Button>
+				<Button 
+					class="grow" 
+					variant="secondary" 
+					onclick={() => {
+						documentType = 'invoice';
+						documentDialogOpen = true;
+					}}
+				>
 					Generate Invoice
 				</Button>
 			</div>
@@ -231,46 +254,89 @@
 	</div>
 </div>
 
-<!-- Quote Generation Dialog -->
-<Dialog.Root bind:open={quoteDialogOpen}>
-	<Dialog.Content>
+<!-- Document Generation Dialog (Unified) -->
+<Dialog.Root bind:open={documentDialogOpen}>
+	<Dialog.Content class="max-h-[90vh] overflow-y-auto">
 		<Dialog.Header>
-			<Dialog.Title>Generate Quote</Dialog.Title>
+			<Dialog.Title>Generate {documentType === 'quote' ? 'Quote' : 'Invoice'}</Dialog.Title>
 			<Dialog.Description>
-				Configure quote options before generating the PDF document.
+				Configure document options before generating the PDF.
 			</Dialog.Description>
 		</Dialog.Header>
 		<form
 			method="POST"
-			action="?/quote"
+			action="?/{documentType}"
 			use:enhance={() => {
 				isGenerating = true;
 				return async ({ update }) => {
 					await update();
 					isGenerating = false;
-					quoteDialogOpen = false;
+					documentDialogOpen = false;
 				};
 			}}
 		>
 			<div class="space-y-4 py-4">
+				<!-- Document Type Selection -->
+				<div class="space-y-2">
+					<Label for="documentType">Document Type</Label>
+					<Select.Root type="single" bind:value={documentType}>
+						<Select.Trigger id="documentType" class="w-full">
+							{documentType === 'quote' ? 'Quote' : 'Invoice'}
+						</Select.Trigger>
+						<Select.Content>
+							<Select.Item value="quote">Quote</Select.Item>
+							<Select.Item value="invoice">Invoice</Select.Item>
+						</Select.Content>
+					</Select.Root>
+				</div>
+
+				<!-- Document ID Input -->
+				<div class="space-y-2">
+					<Label for="documentId">Document ID</Label>
+					<Input
+						id="documentId"
+						name="documentId"
+						type="text"
+						bind:value={documentId}
+						placeholder="e.g., 001"
+						required
+					/>
+					<p class="text-xs text-muted-foreground">
+						Full ID: {documentType === 'quote' ? 'Q' : 'INV'}-{data.job.jobNumber}-{documentId || 'XXX'}
+					</p>
+				</div>
+
+				<!-- Show Materials -->
 				<div class="flex items-center space-x-2">
 					<Checkbox
 						id="showMaterials"
 						name="showMaterials"
 						value="true"
-						bind:checked={showMaterials}
+						checked={showMaterials}
+						onCheckedChange={(checked) => showMaterials = checked === true}
 					/>
 					<Label for="showMaterials" class="cursor-pointer font-normal">
-						Show material breakdown in quote
+						Show material breakdown
 					</Label>
 				</div>
 
-				<div class="flex items-center space-x-2">
-					<Checkbox id="showLabour" name="showLabour" value="true" bind:checked={showLabour} />
-					<Label for="showLabour" class="cursor-pointer font-normal">
-						Show labour breakdown in quote
-					</Label>
-				</div>
+				<!-- Show Labour (Quote only) -->
+				{#if documentType === 'quote'}
+					<div class="flex items-center space-x-2">
+						<Checkbox
+							id="showLabour"
+							name="showLabour"
+							value="true"
+							checked={showLabour}
+							onCheckedChange={(checked) => showLabour = checked === true}
+						/>
+						<Label for="showLabour" class="cursor-pointer font-normal">
+							Show labour breakdown
+						</Label>
+					</div>
+				{/if}
+
+				<!-- Discount -->
 				<div class="space-y-2">
 					<Label for="discount">Discount (%)</Label>
 					<Input
@@ -285,14 +351,31 @@
 					/>
 				</div>
 
+				<!-- Due Days (Invoice only) -->
+				{#if documentType === 'invoice'}
+					<div class="space-y-2">
+						<Label for="dueDays">Payment Due (days)</Label>
+						<Input
+							id="dueDays"
+							name="dueDays"
+							type="number"
+							min="0"
+							step="1"
+							bind:value={dueDays}
+							placeholder="30"
+						/>
+					</div>
+				{/if}
+
+				<!-- Terms & Conditions -->
 				<div class="space-y-2">
-					<Label for="notes">Notes (optional)</Label>
+					<Label for="terms">Terms & Conditions</Label>
 					<Textarea
-						id="notes"
-						name="notes"
-						bind:value={notes}
-						placeholder="Add any additional notes for this quote..."
-						rows={3}
+						id="terms"
+						name="terms"
+						bind:value={terms}
+						placeholder="Enter terms and conditions..."
+						rows={4}
 					/>
 				</div>
 			</div>
@@ -301,103 +384,13 @@
 				<Button
 					type="button"
 					variant="outline"
-					onclick={() => (quoteDialogOpen = false)}
+					onclick={() => (documentDialogOpen = false)}
 					disabled={isGenerating}
 				>
 					Cancel
 				</Button>
 				<Button type="submit" disabled={isGenerating}>
-					{isGenerating ? 'Generating...' : 'Generate Quote'}
-				</Button>
-			</Dialog.Footer>
-		</form>
-	</Dialog.Content>
-</Dialog.Root>
-
-<!-- Invoice Generation Dialog -->
-<Dialog.Root bind:open={invoiceDialogOpen}>
-	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title>Generate Invoice</Dialog.Title>
-			<Dialog.Description>
-				Configure invoice options before generating the PDF document.
-			</Dialog.Description>
-		</Dialog.Header>
-		<form
-			method="POST"
-			action="?/invoice"
-			use:enhance={() => {
-				isGenerating = true;
-				return async ({ update }) => {
-					await update();
-					isGenerating = false;
-					invoiceDialogOpen = false;
-				};
-			}}
-		>
-			<div class="space-y-4 py-4">
-				<div class="flex items-center space-x-2">
-					<Checkbox
-						id="showMaterialsInv"
-						name="showMaterials"
-						value="true"
-						bind:checked={showMaterials}
-					/>
-					<Label for="showMaterialsInv" class="cursor-pointer font-normal">
-						Show material breakdown in invoice
-					</Label>
-				</div>
-
-				<div class="space-y-2">
-					<Label for="dueDays">Payment Due (days)</Label>
-					<Input
-						id="dueDays"
-						name="dueDays"
-						type="number"
-						min="0"
-						step="1"
-						bind:value={dueDays}
-						placeholder="30"
-					/>
-				</div>
-
-				<div class="space-y-2">
-					<Label for="discountInv">Discount (%)</Label>
-					<Input
-						id="discountInv"
-						name="discount"
-						type="number"
-						min="0"
-						max="100"
-						step="0.1"
-						bind:value={discount}
-						placeholder="0"
-					/>
-				</div>
-
-				<div class="space-y-2">
-					<Label for="notesInv">Notes (optional)</Label>
-					<Textarea
-						id="notesInv"
-						name="notes"
-						bind:value={notes}
-						placeholder="Add any additional notes for this invoice..."
-						rows={3}
-					/>
-				</div>
-			</div>
-
-			<Dialog.Footer>
-				<Button
-					type="button"
-					variant="outline"
-					onclick={() => (invoiceDialogOpen = false)}
-					disabled={isGenerating}
-				>
-					Cancel
-				</Button>
-				<Button type="submit" disabled={isGenerating}>
-					{isGenerating ? 'Generating...' : 'Generate Invoice'}
+					{isGenerating ? 'Generating...' : `Generate ${documentType === 'quote' ? 'Quote' : 'Invoice'}`}
 				</Button>
 			</Dialog.Footer>
 		</form>
