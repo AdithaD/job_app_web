@@ -7,7 +7,7 @@ import { getAuth } from '$lib/server/auth';
 const handler: Handle = async ({ event, resolve }) => {
 	try {
 		event.locals.db = getDb(event.platform?.env.job_app_db, event.platform?.env.DATABASE_URL);
-		event.locals.auth = getAuth(event.locals.db);
+		event.locals.auth = getAuth(event.locals.db, event.platform!);
 
 		const session = await event.locals.auth.api.getSession({
 			headers: event.request.headers,

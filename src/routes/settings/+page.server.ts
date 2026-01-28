@@ -39,7 +39,6 @@ export const load: PageServerLoad = async (event) => {
         accountNumber: settings.accountNumber || '',
         accountName: settings.accountName || '',
         terms: settings.terms || '',
-        defaultNotes: settings.defaultNotes || '',
     } : {};
 
     // Load form with existing settings
