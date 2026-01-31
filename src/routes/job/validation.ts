@@ -37,3 +37,10 @@ export const editJobFormSchema = z.object({
 	newClientAddress: z.string().optional(),
 	newClientPhone: z.string().optional()
 });
+
+export const editClientFormSchema = z.object({
+	name: z.string().min(1).max(100).nonempty(),
+	email: z.string().email().optional().or(z.literal('')),
+	phone: z.string().optional().or(z.literal('')),
+	address: z.string().optional().or(z.literal(''))
+});

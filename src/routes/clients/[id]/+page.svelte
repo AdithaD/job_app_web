@@ -27,7 +27,10 @@
 					{data.client.jobs.length} Job{data.client.jobs.length !== 1 ? 's' : ''}
 				</Badge>
 			</div>
-			<Button variant="destructive" onclick={() => (deleteDialogOpen = true)}>Delete Client</Button>
+			<div class="flex gap-2">
+				<Button variant="default" href={`/clients/${data.client.id}/edit`}>Edit Client</Button>
+				<Button variant="destructive" onclick={() => (deleteDialogOpen = true)}>Delete Client</Button>
+			</div>
 		</div>
 
 		<div class="flex w-full gap-8">
